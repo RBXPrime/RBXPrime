@@ -397,8 +397,8 @@
                                             <Ticket className="w-5 h-5 text-gray-500" />
                                             <input type="text" value={referralCode} onChange={(e) => setReferralCode(e.target.value)} placeholder="Enter code" className="flex-1 bg-transparent border-none outline-none text-white w-full uppercase" required={isFreeOrder}/>
                                         </div>
-                                        {/* Added warning text as requested */}
-                                        {isFreeOrder && <p className="text-xs text-red-500 font-medium mt-1">⚠️ Note: If the code is invalid, the Robux transfer will NOT proceed.</p>}
+                                        {/* Updated warning text */}
+                                        {isFreeOrder && <p className="text-xs text-red-500 font-medium mt-1">⚠️ Robux transfer will ONLY proceed with a valid Referral Code.</p>}
                                     </div>
 
                                     {isFreeOrder ? (
