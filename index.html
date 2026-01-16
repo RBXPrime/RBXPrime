@@ -114,11 +114,10 @@
         const LogIn = (p) => <Icon {...p} path={<><path d="M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4"/><polyline points="10 17 15 12 10 7"/><line x1="15" x2="3" y1="12" y2="12"/></>} />;
         const Ticket = (p) => <Icon {...p} path={<path d="M2 9a3 3 0 0 1 0 6v2a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2v-2a3 3 0 0 1 0-6V7a2 2 0 0 0-2-2H4a2 2 0 0 0-2 2Z"/>} />;
 
-        // Custom Robux Logo
+        // Custom Robux Logo - Updated to solid hexagon with square hole
         const RobuxLogo = (p) => (
-            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="currentColor" className={p.className}>
-                <path d="M18.5 12c0-3.59-2.91-6.5-6.5-6.5S5.5 8.41 5.5 12s2.91 6.5 6.5 6.5 6.5-2.91 6.5-6.5zM12 14.5c-1.38 0-2.5-1.12-2.5-2.5s1.12-2.5 2.5-2.5 2.5 1.12 2.5 2.5-1.12 2.5-2.5 2.5z" />
-                <path d="M12 1.5l10.425 6.039v12.078L12 25.656 1.575 19.617V7.539L12 1.5z" fill="none" stroke="currentColor" strokeWidth="1"/>
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" {...p}>
+                <path fillRule="evenodd" d="M12 2L2 7.77V16.23L12 22L22 16.23V7.77L12 2ZM9 9H15V15H9V9Z" clipRule="evenodd" />
             </svg>
         );
 
@@ -248,7 +247,7 @@
         };
 
         // --- VIEWS ---
-        const HomeView = ({ addToCart }) => (
+        const HomeView = ({ username, setUsername, addToCart }) => (
             <>
                 <div className="relative z-10 pt-32 pb-12 lg:pt-48 lg:pb-24 px-4 sm:px-6 lg:px-8 max-w-7xl mx-auto text-center animate-in">
                     <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-white/10 border border-white/20 text-white text-sm font-medium mb-6"><Star className="w-3 h-3 text-yellow-400" fill="currentColor" /><span>#1 Verified Robux Reseller</span></div>
@@ -305,6 +304,7 @@
                             <form onSubmit={handleCheckout} className="space-y-6">
                                 <div className="space-y-4">
                                     <h3 className="text-xl font-semibold text-gray-200">Account Details</h3>
+                                    
                                     <div className="space-y-2">
                                         <label className="text-sm text-gray-400">Referral Code (Optional)</label>
                                         <div className="flex items-center gap-3 bg-[#111] p-3 rounded-xl border border-white/10 focus-within:border-white/40 transition-colors">
@@ -339,6 +339,17 @@
                             </form>
                         </div>
                         {/* Order Summary ... */}
+                        <div className="lg:pl-8 animate-in delay-100">
+                            <div className="bg-[#111] rounded-2xl p-6 border border-white/10 sticky top-32">
+                                <h3 className="text-xl font-bold mb-6">Order Summary</h3>
+                                <div className="space-y-4 max-h-96 overflow-y-auto pr-2 mb-6 custom-scrollbar">
+                                    {cart.map((item, idx) => (
+                                        <div key={idx} className="flex justify-between items-center py-3 border-b border-white/5 last:border-0"><div className="flex items-center gap-3"><div className="w-10 h-10 bg-white/10 rounded-lg flex items-center justify-center"><RobuxLogo className="w-5 h-5 text-white" /></div><div><p className="font-bold text-sm text-white">{item.amount.toLocaleString()} Robux</p><p className="text-xs text-green-400">{item.price === 0 ? 'FREE' : `€${item.price.toFixed(2)}`}</p></div></div><button className="text-gray-500 hover:text-red-500 transition-colors p-2"><Trash2 className="w-4 h-4" /></button></div>
+                                    ))}
+                                </div>
+                                <div className="space-y-3 pt-4 border-t border-white/10"><div className="flex justify-between text-gray-400 text-sm"><span>Subtotal</span><span>€{cartTotal.toFixed(2)}</span></div><div className="flex justify-between text-xl font-bold text-white pt-2"><span>Total</span><span>€{cartTotal.toFixed(2)}</span></div></div>
+                            </div>
+                        </div>
                     </div>
                 </div>
             );
@@ -467,13 +478,13 @@
                                         <div className="hidden md:flex items-center space-x-8">
                                             <button onClick={() => navigateTo('home')} className="text-sm font-medium text-gray-300 hover:text-white">Home</button>
                                             <button onClick={() => setIsCartOpen(!isCartOpen)} className="flex items-center gap-2 px-5 py-2.5 rounded-full bg-white text-black hover:bg-gray-200 transition-all hover:scale-105 active:scale-95 font-bold"><ShoppingCart className="w-4 h-4" /><span className="text-sm">Cart ({cart.length})</span></button>
-                                            {userEmail ? <div className="flex items-center gap-4">{isAdmin && <button onClick={() => setCurrentView('admin')} className="flex items-center gap-2 px-4 py-2 bg-red-600 hover:bg-red-700 rounded-lg text-sm font-bold"><Database className="w-4 h-4" /> Admin Panel</button>}<button onClick={handleLogout} className="text-sm text-gray-400 hover:text-white">Logout</button></div> : <button onClick={() => setShowLoginModal(true)} className="flex items-center gap-2 text-sm font-medium text-white hover:text-yellow-400"><LogIn className="w-4 h-4" /> Login</button>}
+                                            {userEmail ? <div classNamae="flex items-center gap-4">{isAdmin && <button onClick={() => setCurrentView('admin')} className="flex items-center gap-2 px-4 py-2 bg-red-600 hover:bg-red-700 rounded-lg text-sm font-bold"><Database className="w-4 h-4" /> Admin Panel</button>}<button onClick={handleLogout} className="text-sm text-gray-400 hover:text-white">Logout</button></div> : <button onClick={() => setShowLoginModal(true)} className="flex items-center gap-2 text-sm font-medium text-white hover:text-yellow-400"><LogIn className="w-4 h-4" /> Login</button>}
                                         </div>
                                         <div className="md:hidden flex items-center gap-4"><button onClick={() => setIsCartOpen(!isCartOpen)} className="p-2 text-white relative"><ShoppingCart className="w-6 h-6" />{cart.length > 0 && <span className="absolute top-0 right-0 w-4 h-4 bg-red-500 rounded-full text-[10px] flex items-center justify-center font-bold">{cart.length}</span>}</button><button onClick={() => setIsMenuOpen(!isMenuOpen)} className="p-2 text-gray-400 hover:text-white">{isMenuOpen ? <X /> : <Menu />}</button></div>
                                     </div>
                                 </div>
                                 {isMenuOpen && <div className="md:hidden bg-[#0a0a0b] border-b border-white/10 absolute w-full"><div className="px-4 pt-2 pb-6 space-y-2"><button onClick={() => navigateTo('home')} className="block w-full text-left px-3 py-2 text-base font-medium text-white bg-white/5 rounded-lg">Home</button>{userEmail ? <><button onClick={handleLogout} className="block w-full text-left px-3 py-2 text-base font-medium text-gray-400 hover:text-white">Logout</button></> : <button onClick={() => setShowLoginModal(true)} className="block w-full text-left px-3 py-2 text-base font-medium text-yellow-400">Login</button>}</div></div>}
-                                {isCartOpen && <div className="absolute top-20 right-0 md:right-10 w-full md:w-96 bg-[#111] border border-white/10 shadow-2xl rounded-b-2xl md:rounded-2xl p-6 overflow-hidden z-50 animate-in"><div className="flex justify-between items-center mb-4"><h3 className="font-bold text-xl">Your Cart</h3><button onClick={() => setIsCartOpen(false)}><X className="w-5 h-5 text-gray-500 hover:text-white" /></button></div>{cart.length === 0 ? <div className="text-center py-8 text-gray-500"><ShoppingCart className="w-12 h-12 mx-auto mb-3 opacity-20" /><p>Your cart is empty</p></div> : <div className="space-y-4 max-h-[60vh] overflow-y-auto pr-2">{cart.map((item, idx) => (<div key={idx} className="flex justify-between items-center bg-white/5 p-3 rounded-xl border border-white/5"><div className="flex items-center gap-3"><div className="w-10 h-10 bg-white/10 rounded-lg flex items-center justify-center"><RobuxLogo className="w-5 h-5 text-black" /></div><div><p className="font-bold text-sm">{item.amount.toLocaleString()} Robux</p><p className="text-xs text-green-400">{item.price === 0 ? 'FREE' : `€${item.price.toFixed(2)}`}</p></div></div><button onClick={() => removeFromCart(idx)} className="text-gray-500 hover:text-red-500 transition-colors p-2"><Trash2 className="w-4 h-4" /></button></div>))}</div>}{cart.length > 0 && <div className="mt-6 pt-4 border-t border-white/10"><div className="flex justify-between items-center mb-4 text-lg font-bold"><span>Total</span><span>€{cartTotal.toFixed(2)}</span></div><button onClick={() => navigateTo('checkout')} className="w-full py-3 bg-white text-black font-bold rounded-xl hover:bg-gray-200 transition-colors flex items-center justify-center gap-2">Checkout Now <ChevronRight className="w-4 h-4" /></button></div>}</div>}
+                                {isCartOpen && <div className="absolute top-20 right-0 md:right-10 w-full md:w-96 bg-[#111] border border-white/10 shadow-2xl rounded-b-2xl md:rounded-2xl p-6 overflow-hidden z-50 animate-in"><div className="flex justify-between items-center mb-4"><h3 className="font-bold text-xl">Your Cart</h3><button onClick={() => setIsCartOpen(false)}><X className="w-5 h-5 text-gray-500 hover:text-white" /></button></div>{cart.length === 0 ? <div className="text-center py-8 text-gray-500"><ShoppingCart className="w-12 h-12 mx-auto mb-3 opacity-20" /><p>Your cart is empty</p></div> : <div className="space-y-4 max-h-[60vh] overflow-y-auto pr-2">{cart.map((item, idx) => (<div key={idx} className="flex justify-between items-center bg-white/5 p-3 rounded-xl border border-white/5"><div className="flex items-center gap-3"><div className="w-10 h-10 bg-white/10 rounded-lg flex items-center justify-center"><RobuxLogo className="w-5 h-5 text-white" /></div><div><p className="font-bold text-sm">{item.amount.toLocaleString()} Robux</p><p className="text-xs text-green-400">{item.price === 0 ? 'FREE' : `€${item.price.toFixed(2)}`}</p></div></div><button onClick={() => removeFromCart(idx)} className="text-gray-500 hover:text-red-500 transition-colors p-2"><Trash2 className="w-4 h-4" /></button></div>))}</div>}{cart.length > 0 && <div className="mt-6 pt-4 border-t border-white/10"><div className="flex justify-between items-center mb-4 text-lg font-bold"><span>Total</span><span>€{cartTotal.toFixed(2)}</span></div><button onClick={() => navigateTo('checkout')} className="w-full py-3 bg-white text-black font-bold rounded-xl hover:bg-gray-200 transition-colors flex items-center justify-center gap-2">Checkout Now <ChevronRight className="w-4 h-4" /></button></div>}</div>}
                             </nav>
                             <main>
                                 {currentView === 'home' && <HomeView addToCart={addToCart} />}
