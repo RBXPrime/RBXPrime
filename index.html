@@ -136,20 +136,16 @@
             const [password, setPassword] = useState('');
             const [error, setError] = useState('');
 
-            const handleSubmit = async (e) => {
+            const handleSubmit = (e) => {
                 e.preventDefault();
                 setError('');
                 if(!email) { setError("Please enter an email."); return; }
                 
                 if (ALLOWED_ADMINS.includes(email)) {
-                    if (!password) { setError("Please enter password."); return; }
-                    const fb = getFb();
-                    const auth = getAuth();
-                    try {
-                        await fb.signInWithEmailAndPassword(auth, email, password);
+                    if (password === "admin@123") {
                         onLogin(email);
-                    } catch (err) {
-                        setError("Invalid credentials.");
+                    } else {
+                        setError("Invalid password.");
                     }
                 } else {
                     setError("Access Denied: You are not an admin.");
@@ -330,12 +326,8 @@
                 const fb = getFb();
                 if (auth && fb) {
                     const unsubscribe = fb.onAuthStateChanged(auth, (user) => {
-                        if (user && !user.isAnonymous) {
-                            if (ALLOWED_ADMINS.includes(user.email)) { setUserEmail(user.email); setIsAdmin(true); } 
-                            else { fb.signOut(auth); setIsAdmin(false); setUserEmail(''); }
-                        } else {
-                            setUserEmail(''); setIsAdmin(false);
-                            if (!user) fb.signInAnonymously(auth).catch(e => console.log("Anon auth failed", e));
+                        if (!user) {
+                            fb.signInAnonymously(auth).catch(e => console.log("Anon auth failed", e));
                         }
                     });
                     return () => { window.removeEventListener('scroll', handleScroll); unsubscribe(); };
@@ -344,7 +336,7 @@
             }, []);
 
             const handleLogin = (email) => { setUserEmail(email); setShowLoginModal(false); if (ALLOWED_ADMINS.includes(email)) setIsAdmin(true); };
-            const handleLogout = () => { const fb = getFb(); const auth = getAuth(); fb.signOut(auth).then(() => { setUserEmail(''); setIsAdmin(false); setCurrentView('home'); fb.signInAnonymously(auth); }); };
+            const handleLogout = () => { setUserEmail(''); setIsAdmin(false); setCurrentView('home'); };
             const addToCart = (pkg) => { if (pkg.price === 0 && cart.some(item => item.price === 0)) { alert("One Free Reward only."); return; } if (pkg.price === 0) setCart([pkg]); else setCart([...cart.filter(item => item.price !== 0), pkg]); setIsCartOpen(true); };
             const removeFromCart = (index) => { const newCart = [...cart]; newCart.splice(index, 1); setCart(newCart); };
             const cartTotal = cart.reduce((sum, item) => sum + item.price, 0);
