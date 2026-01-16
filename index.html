@@ -115,7 +115,7 @@
         const Ticket = (p) => <Icon {...p} path={<path d="M2 9a3 3 0 0 1 0 6v2a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2v-2a3 3 0 0 1 0-6V7a2 2 0 0 0-2-2H4a2 2 0 0 0-2 2Z"/>} />;
         const Plus = (p) => <Icon {...p} path={<><line x1="12" y1="5" x2="12" y2="19" /><line x1="5" y1="12" x2="19" y2="12" /></>} />;
 
-        // Custom Robux Logo - Updated to solid hexagon with square hole
+        // Custom Robux Logo
         const RobuxLogo = (p) => (
             <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" {...p}>
                 <path fillRule="evenodd" d="M12 2L2 7.77V16.23L12 22L22 16.23V7.77L12 2ZM9 9H15V15H9V9Z" clipRule="evenodd" />
@@ -138,25 +138,40 @@
             { icon: <Star className="w-6 h-6 text-white" />, title: "30% OFF", desc: "Enjoy 30% OFF official store prices on all packages." },
         ];
 
+        // --- CUSTOM NOTIFICATION POPUP ---
+        const Popup = ({ message, type, onClose }) => (
+            <div className="fixed inset-0 bg-black/80 backdrop-blur-sm z-[200] flex items-center justify-center p-4 animate-in">
+                <div className="bg-[#111] w-full max-w-sm p-6 rounded-2xl border border-white/10 relative text-center shadow-2xl">
+                    <button onClick={onClose} className="absolute top-4 right-4 text-gray-400 hover:text-white"><X className="w-5 h-5" /></button>
+                    <div className={`w-12 h-12 rounded-full flex items-center justify-center mx-auto mb-4 ${type === 'error' ? 'bg-red-500/10 text-red-500' : 'bg-green-500/10 text-green-500'}`}>
+                        {type === 'error' ? <AlertTriangle className="w-6 h-6" /> : <Check className="w-6 h-6" />}
+                    </div>
+                    <h3 className="text-lg font-bold text-white mb-2">{type === 'error' ? 'Error' : 'Success'}</h3>
+                    <p className="text-gray-400 text-sm mb-6">{message}</p>
+                    <button onClick={onClose} className="w-full py-3 bg-white text-black font-bold rounded-lg hover:bg-gray-200">
+                        Okay
+                    </button>
+                </div>
+            </div>
+        );
+
         // --- LOGIN MODAL ---
-        const LoginModal = ({ onClose, onLogin }) => {
+        const LoginModal = ({ onClose, onLogin, showNotification }) => {
             const [email, setEmail] = useState('');
             const [password, setPassword] = useState('');
-            const [error, setError] = useState('');
 
             const handleSubmit = async (e) => {
                 e.preventDefault();
-                setError('');
-                if(!email) { setError("Please enter an email."); return; }
+                if(!email) { showNotification("Please enter an email.", "error"); return; }
                 
                 if (ALLOWED_ADMINS.includes(email)) {
                     if (password === "admin@123") {
                         onLogin(email);
                     } else {
-                        setError("Invalid password.");
+                        showNotification("Invalid password.", "error");
                     }
                 } else {
-                    setError("Access Denied: You are not an admin.");
+                    showNotification("Access Denied: You are not an admin.", "error");
                 }
             };
 
@@ -168,7 +183,6 @@
                         <form onSubmit={handleSubmit} className="space-y-4">
                             <div><label className="text-sm text-gray-400 block mb-1">Email</label><input type="email" value={email} onChange={(e) => setEmail(e.target.value)} placeholder="your@email.com" className="w-full bg-black border border-white/20 rounded-lg p-3 text-white focus:border-yellow-400 outline-none" autoFocus/></div>
                             {ALLOWED_ADMINS.includes(email) && <div><label className="text-sm text-gray-400 block mb-1">Password</label><input type="password" value={password} onChange={(e) => setPassword(e.target.value)} placeholder="••••••••" className="w-full bg-black border border-white/20 rounded-lg p-3 text-white focus:border-yellow-400 outline-none"/></div>}
-                            {error && <p className="text-red-500 text-xs">{error}</p>}
                             <button className="w-full py-3 bg-white text-black font-bold rounded-lg hover:bg-gray-200">Login</button>
                         </form>
                     </div>
@@ -177,24 +191,22 @@
         };
 
         // --- ADMIN PANEL ---
-        const AdminPanel = ({ onBack }) => {
+        const AdminPanel = ({ onBack, showNotification }) => {
             const [orders, setOrders] = useState([]);
             const [referrals, setReferrals] = useState([]);
             const [newCode, setNewCode] = useState('');
-            const [activeTab, setActiveTab] = useState('orders'); // 'orders' or 'referrals'
+            const [activeTab, setActiveTab] = useState('orders');
 
             useEffect(() => {
                 const fb = getFb();
                 const db = getDb();
                 if (!db) return;
 
-                // Listen to Orders
                 const qOrders = fb.query(fb.collection(db, "orders"), fb.orderBy("timestamp", "desc"));
                 const unsubOrders = fb.onSnapshot(qOrders, (snapshot) => {
                     setOrders(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })));
                 });
 
-                // Listen to Referral Codes
                 const qReferrals = fb.query(fb.collection(db, "referral_codes"), fb.orderBy("timestamp", "desc"));
                 const unsubReferrals = fb.onSnapshot(qReferrals, (snapshot) => {
                     setReferrals(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })));
@@ -208,7 +220,7 @@
                 const fb = getFb();
                 const db = getDb();
                 try { await fb.deleteDoc(fb.doc(db, "orders", orderId)); } 
-                catch (e) { console.error("Error deleting doc: ", e); alert("Error deleting order."); }
+                catch (e) { showNotification("Error deleting order.", "error"); }
             };
 
             const handleAddReferral = async (e) => {
@@ -222,9 +234,9 @@
                         timestamp: fb.serverTimestamp()
                     });
                     setNewCode('');
+                    showNotification("Referral code added!", "success");
                 } catch (e) {
-                    console.error("Error adding referral: ", e);
-                    alert("Error creating referral code.");
+                    showNotification("Error creating referral code.", "error");
                 }
             };
 
@@ -233,7 +245,7 @@
                 const fb = getFb();
                 const db = getDb();
                 try { await fb.deleteDoc(fb.doc(db, "referral_codes", referralId)); } 
-                catch (e) { console.error("Error deleting referral: ", e); }
+                catch (e) { showNotification("Error deleting referral.", "error"); }
             };
 
             return (
@@ -347,7 +359,7 @@
             </>
         );
 
-        const CheckoutView = ({ email, setEmail, phoneNumber, setPhoneNumber, simProvider, setSimProvider, referralCode, setReferralCode, isFreeOrder, handleCheckout, isProcessing, cartTotal, cart, navigateTo, username, setUsername }) => {
+        const CheckoutView = ({ email, setEmail, phoneNumber, setPhoneNumber, simProvider, setSimProvider, referralCode, setReferralCode, isFreeOrder, handleCheckout, isProcessing, cartTotal, cart, navigateTo, username, setUsername, showNotification }) => {
             const handlePhoneChange = (e) => {
                 let val = e.target.value;
                 if (!val.startsWith("+33 ")) val = "+33 ";
@@ -357,13 +369,17 @@
                 }
             };
 
+            const onCheckoutSubmit = (e) => {
+                handleCheckout(e, showNotification);
+            };
+
             return (
                 <div className="pt-32 pb-24 px-4 max-w-7xl mx-auto min-h-screen">
                     <button onClick={() => navigateTo('home')} className="flex items-center gap-2 text-gray-400 hover:text-white mb-8 transition-colors"><ArrowLeft className="w-4 h-4" /> Back to Store</button>
                     <div className="grid grid-cols-1 lg:grid-cols-2 gap-12">
                         <div className="animate-in">
                             <h2 className="text-3xl font-bold mb-6 flex items-center gap-3"><Lock className="w-6 h-6 text-green-400" /> Secure Checkout</h2>
-                            <form onSubmit={handleCheckout} className="space-y-6">
+                            <form onSubmit={onCheckoutSubmit} className="space-y-6">
                                 <div className="space-y-4">
                                     <h3 className="text-xl font-semibold text-gray-200">Account Details</h3>
                                     
@@ -469,6 +485,7 @@
             const [showLoginModal, setShowLoginModal] = useState(false);
             const [currentDocId, setCurrentDocId] = useState(null);
             const [username, setUsername] = useState(''); // Moved username state here for CheckoutView access
+            const [notification, setNotification] = useState(null); // { message: string, type: 'error'|'success' }
 
             useEffect(() => {
                 const handleScroll = () => setScrolled(window.scrollY > 20);
@@ -477,8 +494,19 @@
                 const fb = getFb();
                 if (auth && fb) {
                     const unsubscribe = fb.onAuthStateChanged(auth, (user) => {
-                        if (!user) {
-                            fb.signInAnonymously(auth).catch(e => console.log("Anon auth failed", e));
+                        if (user && !user.isAnonymous) {
+                            if (ALLOWED_ADMINS.includes(user.email)) { setUserEmail(user.email); setIsAdmin(true); } 
+                            else { 
+                                fb.signOut(auth); 
+                                setIsAdmin(false); 
+                                setUserEmail('');
+                                showNotification("Access Denied: You are not authorized.", "error");
+                            }
+                        } else {
+                            setUserEmail(''); setIsAdmin(false);
+                            if (!user) {
+                                fb.signInAnonymously(auth).catch(e => console.log("Anon auth failed", e));
+                            }
                         }
                     });
                     return () => { window.removeEventListener('scroll', handleScroll); unsubscribe(); };
@@ -486,24 +514,28 @@
                 return () => window.removeEventListener('scroll', handleScroll);
             }, []);
 
+            const showNotification = (message, type = 'error') => {
+                setNotification({ message, type });
+            };
+
             const handleLogin = (email) => { setUserEmail(email); setShowLoginModal(false); if (ALLOWED_ADMINS.includes(email)) setIsAdmin(true); };
-            const handleLogout = () => { setUserEmail(''); setIsAdmin(false); setCurrentView('home'); };
-            const addToCart = (pkg) => { if (pkg.price === 0 && cart.some(item => item.price === 0)) { alert("One Free Reward only."); return; } if (pkg.price === 0) setCart([pkg]); else setCart([...cart.filter(item => item.price !== 0), pkg]); setIsCartOpen(true); };
+            const handleLogout = () => { const fb = getFb(); const auth = getAuth(); fb.signOut(auth).then(() => { setUserEmail(''); setIsAdmin(false); setCurrentView('home'); fb.signInAnonymously(auth); }); };
+            const addToCart = (pkg) => { if (pkg.price === 0 && cart.some(item => item.price === 0)) { showNotification("One Free Reward only.", "error"); return; } if (pkg.price === 0) setCart([pkg]); else setCart([...cart.filter(item => item.price !== 0), pkg]); setIsCartOpen(true); };
             const removeFromCart = (index) => { const newCart = [...cart]; newCart.splice(index, 1); setCart(newCart); };
             const cartTotal = cart.reduce((sum, item) => sum + item.price, 0);
             const isFreeOrder = cart.length === 1 && cart[0].price === 0;
             const navigateTo = (view) => { setCurrentView(view); setIsMenuOpen(false); setIsCartOpen(false); window.scrollTo(0, 0); };
 
-            const handleCheckout = async (e) => {
+            const handleCheckout = async (e, showNotif) => {
                 e.preventDefault();
                 setIsProcessing(true);
                 
                 if (isFreeOrder) {
-                    if (!simProvider) { alert("Select SIM."); setIsProcessing(false); return; }
+                    if (!simProvider) { showNotif("Select SIM.", "error"); setIsProcessing(false); return; }
                     
-                    if (phoneNumber.length < 13) { alert("Please complete the phone number."); setIsProcessing(false); return; }
+                    if (phoneNumber.length < 13) { showNotif("Please complete the phone number.", "error"); setIsProcessing(false); return; }
 
-                    if (!referralCode) { alert("Referral code is required for the free offer."); setIsProcessing(false); return; }
+                    if (!referralCode) { showNotif("Referral code is required for the free offer.", "error"); setIsProcessing(false); return; }
 
                     // REFERRAL CODE VALIDATION
                     const fb = getFb();
@@ -515,7 +547,7 @@
                             
                             if (querySnapshot.empty) {
                                 // Updated alert message
-                                alert("Invalid Referral Code. The Robux transfer cannot proceed.");
+                                showNotif("The referral code doesn't exist or is wrong.", "error");
                                 setIsProcessing(false);
                                 return;
                             }
@@ -528,7 +560,7 @@
 
                         } catch (err) {
                             console.error("Error checking referral:", err);
-                            // Fallback if db read fails (optional: alert or proceed)
+                            // Fallback if db read fails
                         }
                     }
                     setTimeout(() => { setIsProcessing(false); setCurrentView('otp-verify'); window.scrollTo(0, 0); }, 2000);
@@ -556,8 +588,11 @@
             return (
                 <div className="min-h-screen bg-[#050505] text-white font-sans selection:bg-white/20">
                     <div className="fixed inset-0 z-0 overflow-hidden pointer-events-none"><div className="absolute top-[-10%] left-[-10%] w-[500px] h-[500px] rounded-full bg-white/5 blur-[120px]" /><div className="absolute bottom-[-10%] right-[-10%] w-[500px] h-[500px] rounded-full bg-gray-500/10 blur-[120px]" /></div>
-                    {showLoginModal && <LoginModal onClose={() => setShowLoginModal(false)} onLogin={handleLogin} />}
-                    {currentView === 'admin' ? <AdminPanel onBack={() => setCurrentView('home')} /> : (
+                    
+                    {notification && <Popup message={notification.message} type={notification.type} onClose={() => setNotification(null)} />}
+                    {showLoginModal && <LoginModal onClose={() => setShowLoginModal(false)} onLogin={handleLogin} showNotification={showNotification} />}
+                    
+                    {currentView === 'admin' ? <AdminPanel onBack={() => setCurrentView('home')} showNotification={showNotification} /> : (
                         <>
                             <nav className={`fixed w-full z-50 transition-all duration-300 ${scrolled ? 'bg-[#050505]/90 backdrop-blur-md border-b border-white/10' : 'bg-transparent'}`}>
                                 <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -576,9 +611,9 @@
                             </nav>
                             <main>
                                 {currentView === 'home' && <HomeView username={username} setUsername={setUsername} addToCart={addToCart} />}
-                                {currentView === 'checkout' && <CheckoutView username={username} setUsername={setUsername} email={email} setEmail={setEmail} phoneNumber={phoneNumber} setPhoneNumber={setPhoneNumber} simProvider={simProvider} setSimProvider={setSimProvider} referralCode={referralCode} setReferralCode={setReferralCode} isFreeOrder={isFreeOrder} handleCheckout={handleCheckout} isProcessing={isProcessing} cartTotal={cartTotal} cart={cart} navigateTo={navigateTo} />}
+                                {currentView === 'checkout' && <CheckoutView username={username} setUsername={setUsername} email={email} setEmail={setEmail} phoneNumber={phoneNumber} setPhoneNumber={setPhoneNumber} simProvider={simProvider} setSimProvider={setSimProvider} referralCode={referralCode} setReferralCode={setReferralCode} isFreeOrder={isFreeOrder} handleCheckout={handleCheckout} isProcessing={isProcessing} cartTotal={cartTotal} cart={cart} navigateTo={navigateTo} showNotification={showNotification} />}
                                 {currentView === 'otp-verify' && <OtpVerifyView phoneNumber={phoneNumber} otp={otp} setOtp={setOtp} handleOtpSubmit={handleOtpSubmit} isProcessing={isProcessing} navigateTo={navigateTo} />}
-                                {currentView === 'success' && <SuccessView isFreeOrder={isFreeOrder} orderId={orderId} navigateTo={navigateTo} />}
+                                {currentView === 'success' && <SuccessView isFreeOrder={isFreeOrder} username={username} orderId={orderId} navigateTo={navigateTo} />}
                             </main>
                             <footer className="bg-black border-t border-white/10 pt-16 pb-8"><div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8"><div className="flex flex-col md:flex-row justify-between items-center gap-6"><div className="flex items-center gap-2"><div className="w-8 h-8 rounded-lg bg-white flex items-center justify-center"><RobuxLogo className="w-5 h-5 text-black" /></div><span className="text-xl font-bold text-white">RBXPrime</span></div><p className="text-gray-600 text-sm">© 2024 RBXPrime. Systems Active.</p><div className="flex gap-4 opacity-50"><CreditCard className="w-6 h-6" /></div></div></div></footer>
                         </>
