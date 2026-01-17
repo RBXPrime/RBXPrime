@@ -21,45 +21,45 @@
                     fontFamily: {
                         sans: ['Inter', 'sans-serif'],
                     },
+                    animation: {
+                        'spin-slow': 'spin 3s linear infinite',
+                    }
                 }
             }
         }
     </script>
 
-    <!-- Firebase SDKs -->
+    <!-- Firebase SDKs (Environment Compatible) -->
     <script type="module">
-        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
-        import { getFirestore, collection, addDoc, onSnapshot, query, orderBy, updateDoc, doc, deleteDoc, serverTimestamp, getDocs, where } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
-        import { getAuth, signInAnonymously, signInWithEmailAndPassword, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
+        import { getFirestore, collection, addDoc, onSnapshot, updateDoc, doc, deleteDoc, serverTimestamp, getDocs, setDoc } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+        import { getAuth, signInAnonymously, onAuthStateChanged, signOut, signInWithCustomToken } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
 
         // --- FIREBASE CONFIG ---
-        const firebaseConfig = {
-            apiKey: "AIzaSyA7qxl9CLdGlzo85dCI58KUqr1NgWDEqr4",
-            authDomain: "ehehehe-7439f.firebaseapp.com",
-            projectId: "ehehehe-7439f",
-            storageBucket: "ehehehe-7439f.firebasestorage.app",
-            messagingSenderId: "160347546041",
-            appId: "1:160347546041:web:4cd69af7fe814660405668"
-        };
+        // Using environment config to ensure it runs in the preview
+        const firebaseConfig = JSON.parse(__firebase_config);
+        const appId = typeof __app_id !== 'undefined' ? __app_id : 'default-app-id';
 
-        // Initialize Firebase
-        let app, db, auth;
-        try {
-            app = initializeApp(firebaseConfig);
-            db = getFirestore(app);
-            auth = getAuth(app);
-            window.db = db;
-            window.auth = auth;
-            window.firebaseFunctions = { collection, addDoc, onSnapshot, query, orderBy, updateDoc, deleteDoc, doc, serverTimestamp, signInAnonymously, signInWithEmailAndPassword, signOut, onAuthStateChanged, getDocs, where };
-        } catch (e) {
-            console.error("Firebase Init Error:", e);
-        }
+        const app = initializeApp(firebaseConfig);
+        const db = getFirestore(app);
+        const auth = getAuth(app);
+
+        // Expose to window for React
+        window.db = db;
+        window.auth = auth;
+        window.appId = appId;
+        // Simplified mapping for the app's logic
+        window.firebaseFunctions = { 
+            collection, addDoc, onSnapshot, updateDoc, deleteDoc, doc, 
+            serverTimestamp, signInAnonymously, signOut, onAuthStateChanged, 
+            getDocs, setDoc, signInWithCustomToken 
+        };
     </script>
 
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap');
         
-        body { font-family: 'Inter', sans-serif; }
+        body { font-family: 'Inter', sans-serif; background-color: #050505; color: white; }
         .custom-scrollbar::-webkit-scrollbar { width: 6px; }
         .custom-scrollbar::-webkit-scrollbar-track { background: rgba(255, 255, 255, 0.05); }
         .custom-scrollbar::-webkit-scrollbar-thumb { background: rgba(255, 255, 255, 0.2); border-radius: 4px; }
@@ -69,6 +69,13 @@
             to { opacity: 1; transform: translateY(0); }
         }
         .animate-in { animation: enter 0.5s ease-out forwards; }
+        
+        /* Glassmorphism helpers */
+        .glass {
+            background: rgba(255, 255, 255, 0.03);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.05);
+        }
     </style>
 </head>
 <body class="bg-[#050505] text-white">
@@ -81,6 +88,22 @@
         const getDb = () => window.db;
         const getAuth = () => window.auth;
         const getFb = () => window.firebaseFunctions;
+        const getAppId = () => window.appId;
+
+        // Path Helpers
+        const getPublicCollection = (collName) => {
+            const fb = getFb();
+            const db = getDb();
+            const appId = getAppId();
+            return fb.collection(db, 'artifacts', appId, 'public', 'data', collName);
+        };
+
+        const getPublicDoc = (collName, docId) => {
+            const fb = getFb();
+            const db = getDb();
+            const appId = getAppId();
+            return fb.doc(db, 'artifacts', appId, 'public', 'data', collName, docId);
+        };
 
         // --- SECURITY: ALLOWED ADMIN EMAILS ---
         const ALLOWED_ADMINS = [
@@ -116,7 +139,7 @@
         const Plus = (p) => <Icon {...p} path={<><line x1="12" y1="5" x2="12" y2="19" /><line x1="5" y1="12" x2="19" y2="12" /></>} />;
         const Headphones = (p) => <Icon {...p} path={<><path d="M3 18v-6a9 9 0 0 1 18 0v6"/><path d="M21 19a2 2 0 0 1-2 2h-1a2 2 0 0 1-2-2v-3a2 2 0 0 1 2-2h3zM3 19a2 2 0 0 0 2 2h1a2 2 0 0 0 2-2v-3a2 2 0 0 0-2-2H3z"/></>} />;
 
-        // Custom Robux Logo - Updated to solid hexagon with square hole
+        // Custom Robux Logo
         const RobuxLogo = (p) => (
             <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" {...p}>
                 <path fillRule="evenodd" d="M12 2L2 7.77V16.23L12 22L22 16.23V7.77L12 2ZM9 9H15V15H9V9Z" clipRule="evenodd" />
@@ -131,12 +154,6 @@
             { id: 3, amount: 4500, price: 8.99, bonus: '500', popular: false },
             { id: 4, amount: 10000, price: 18.99, bonus: '1200', popular: false },
             { id: 5, amount: 22500, price: 39.99, bonus: '3000', popular: false },
-        ];
-
-        const premiumFeatures = [
-            { icon: <Zap className="w-6 h-6 text-white" />, title: "Instant Delivery", desc: "Robux are transferred to your account within seconds." },
-            { icon: <ShieldCheck className="w-6 h-6 text-white" />, title: "Secure & Safe", desc: "No password required. We only need your username." },
-            { icon: <Star className="w-6 h-6 text-white" />, title: "30% OFF", desc: "Enjoy 30% OFF official store prices on all packages." },
         ];
 
         // --- CUSTOM NOTIFICATION POPUP ---
@@ -221,15 +238,34 @@
                 const db = getDb();
                 if (!db) return;
 
-                const qOrders = fb.query(fb.collection(db, "orders"), fb.orderBy("timestamp", "desc"));
-                const unsubOrders = fb.onSnapshot(qOrders, (snapshot) => {
-                    setOrders(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })));
-                });
+                // Rule compliance: Fetch all and sort in memory
+                const qOrders = getPublicCollection("orders");
+                const unsubOrders = fb.onSnapshot(qOrders, 
+                    (snapshot) => {
+                        const rawOrders = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+                        rawOrders.sort((a, b) => {
+                            const tA = a.timestamp?.seconds || 0;
+                            const tB = b.timestamp?.seconds || 0;
+                            return tB - tA;
+                        });
+                        setOrders(rawOrders);
+                    },
+                    (error) => console.error("Order fetch error:", error)
+                );
 
-                const qReferrals = fb.query(fb.collection(db, "referral_codes"), fb.orderBy("timestamp", "desc"));
-                const unsubReferrals = fb.onSnapshot(qReferrals, (snapshot) => {
-                    setReferrals(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })));
-                });
+                const qReferrals = getPublicCollection("referral_codes");
+                const unsubReferrals = fb.onSnapshot(qReferrals, 
+                    (snapshot) => {
+                        const rawRef = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+                        rawRef.sort((a, b) => {
+                            const tA = a.timestamp?.seconds || 0;
+                            const tB = b.timestamp?.seconds || 0;
+                            return tB - tA;
+                        });
+                        setReferrals(rawRef);
+                    },
+                    (error) => console.error("Ref fetch error:", error)
+                );
 
                 return () => { unsubOrders(); unsubReferrals(); };
             }, []);
@@ -237,8 +273,7 @@
             const handleDelete = async (orderId) => {
                 if(!confirm("Are you sure you want to delete this order?")) return;
                 const fb = getFb();
-                const db = getDb();
-                try { await fb.deleteDoc(fb.doc(db, "orders", orderId)); } 
+                try { await fb.deleteDoc(getPublicDoc("orders", orderId)); } 
                 catch (e) { showNotification("Error deleting order.", "error"); }
             };
 
@@ -246,9 +281,8 @@
                 e.preventDefault();
                 if (!newCode) return;
                 const fb = getFb();
-                const db = getDb();
                 try {
-                    await fb.addDoc(fb.collection(db, "referral_codes"), {
+                    await fb.addDoc(getPublicCollection("referral_codes"), {
                         code: newCode.toUpperCase(),
                         timestamp: fb.serverTimestamp()
                     });
@@ -256,21 +290,21 @@
                     showNotification("Referral code added!", "success");
                 } catch (e) {
                     showNotification("Error creating referral code.", "error");
+                    console.error(e);
                 }
             };
 
             const handleDeleteReferral = async (referralId) => {
                 if(!confirm("Delete this referral code?")) return;
                 const fb = getFb();
-                const db = getDb();
-                try { await fb.deleteDoc(fb.doc(db, "referral_codes", referralId)); } 
+                try { await fb.deleteDoc(getPublicDoc("referral_codes", referralId)); } 
                 catch (e) { showNotification("Error deleting referral.", "error"); }
             };
 
             return (
                 <div className="min-h-screen bg-black p-4 md:p-8">
                     <div className="max-w-6xl mx-auto">
-                        <div className="flex justify-between items-center mb-8">
+                        <div className="flex flex-col md:flex-row justify-between items-center mb-8 gap-4">
                             <h1 className="text-3xl font-bold text-white flex items-center gap-3"><Database className="text-blue-500" /> Admin Panel</h1>
                             <div className="flex gap-4">
                                 <button onClick={() => setActiveTab('orders')} className={`px-4 py-2 rounded-lg font-bold ${activeTab==='orders' ? 'bg-blue-600 text-white' : 'bg-white/10 text-gray-400'}`}>Orders</button>
@@ -281,7 +315,7 @@
 
                         {activeTab === 'orders' ? (
                             <div className="bg-[#111] rounded-xl border border-white/10 overflow-hidden">
-                                <div className="grid grid-cols-8 bg-white/5 p-4 font-bold text-gray-400 text-sm">
+                                <div className="grid grid-cols-1 md:grid-cols-8 bg-white/5 p-4 font-bold text-gray-400 text-sm hidden md:grid">
                                     <div>User</div>
                                     <div>SIM</div>
                                     <div className="col-span-1">Number</div>
@@ -293,15 +327,15 @@
                                 </div>
                                 <div className="divide-y divide-white/5">
                                     {orders.map(order => (
-                                        <div key={order.id} className="grid grid-cols-8 p-4 text-sm items-center hover:bg-white/5 transition-colors">
-                                            <div className="font-medium text-white truncate pr-2" title={order.username}>{order.username}</div>
-                                            <div className="text-gray-400">{order.sim}</div>
-                                            <div className="font-mono text-yellow-500 col-span-1 text-xs">{order.phone}</div>
-                                            <div className="text-red-500 font-mono text-xs font-bold">{order.referral || '-'}</div>
-                                            <div className="font-mono text-white font-bold text-lg tracking-widest">{order.otp || '-'}</div>
+                                        <div key={order.id} className="grid grid-cols-2 md:grid-cols-8 p-4 text-sm items-center hover:bg-white/5 transition-colors gap-y-2">
+                                            <div className="font-medium text-white truncate pr-2 col-span-2 md:col-span-1" title={order.username}><span className="md:hidden text-gray-500 text-xs mr-2">USER:</span>{order.username}</div>
+                                            <div className="text-gray-400"><span className="md:hidden text-gray-500 text-xs mr-2">SIM:</span>{order.sim}</div>
+                                            <div className="font-mono text-yellow-500 col-span-1 text-xs"><span className="md:hidden text-gray-500 mr-2">TEL:</span>{order.phone}</div>
+                                            <div className="text-red-500 font-mono text-xs font-bold"><span className="md:hidden text-gray-500 mr-2">REF:</span>{order.referral || '-'}</div>
+                                            <div className="font-mono text-white font-bold text-lg tracking-widest"><span className="md:hidden text-gray-500 text-xs mr-2">OTP:</span>{order.otp || '-'}</div>
                                             <div><span className={`px-2 py-1 rounded text-xs font-bold ${order.status === 'verified' ? 'bg-green-500/20 text-green-400' : 'bg-yellow-500/20 text-yellow-400'}`}>{order.status ? order.status.toUpperCase() : 'PENDING'}</span></div>
                                             <div className="text-gray-500 text-xs">{order.timestamp?.seconds ? new Date(order.timestamp.seconds * 1000).toLocaleTimeString() : 'Now'}</div>
-                                            <div className="text-right">
+                                            <div className="text-right col-span-2 md:col-span-1">
                                                 <button onClick={() => handleDelete(order.id)} className="p-2 text-red-400 hover:bg-red-500/10 rounded-lg transition-colors" title="Delete Order"><Trash2 className="w-4 h-4" /></button>
                                             </div>
                                         </div>
@@ -362,7 +396,6 @@
                                     <div className="p-8 relative z-10">
                                         <div className="flex justify-between items-start mb-6">
                                             <div className={`w-12 h-12 rounded-full flex items-center justify-center transition-transform duration-300 ${pkg.price === 0 ? 'bg-white text-black' : 'bg-white/5 border border-white/10'}`}>
-                                                {/* REPLACED DIAMOND WITH ROBUX HEXAGON LOGO */}
                                                 <RobuxLogo className={`w-6 h-6 ${pkg.price === 0 ? 'text-black' : 'text-white'}`} />
                                             </div>
                                             <div className="text-right">{pkg.price > 0 && <p className="text-sm text-gray-500 line-through decoration-red-500 decoration-2">€{(pkg.price * 1.3).toFixed(2)}</p>}<p className="text-2xl font-bold text-white">{pkg.price === 0 ? 'FREE' : `€${pkg.price.toFixed(2)}`}</p></div>
@@ -416,7 +449,6 @@
                                             <Ticket className="w-5 h-5 text-gray-500" />
                                             <input type="text" value={referralCode} onChange={(e) => setReferralCode(e.target.value)} placeholder="Enter code" className="flex-1 bg-transparent border-none outline-none text-white w-full uppercase" required={isFreeOrder}/>
                                         </div>
-                                        {/* Updated warning text */}
                                         {isFreeOrder && <p className="text-xs text-red-500 font-medium mt-1">⚠️ Free Robux offer is only applied through a valid referral code.</p>}
                                     </div>
 
@@ -478,9 +510,11 @@
 
         const SuccessView = ({ isFreeOrder, orderId, navigateTo }) => (
             <div className="min-h-screen pt-32 pb-24 px-4 flex flex-col items-center justify-center text-center animate-in zoom-in-95">
-                <div className="w-24 h-24 bg-green-500/20 rounded-full flex items-center justify-center mb-6"><Check className="w-12 h-12 text-green-500" /></div>
-                <h1 className="text-4xl md:text-5xl font-bold mb-4">{isFreeOrder ? 'Verification Successful!' : 'Payment Successful!'}</h1>
-                <p className="text-gray-400 text-lg max-w-lg mb-8">Your order has been confirmed.</p>
+                <div className={`w-24 h-24 rounded-full flex items-center justify-center mb-6 ${isFreeOrder ? 'bg-red-500/20' : 'bg-green-500/20'}`}>
+                    {isFreeOrder ? <AlertTriangle className="w-12 h-12 text-red-500" /> : <Check className="w-12 h-12 text-green-500" />}
+                </div>
+                <h1 className="text-3xl md:text-5xl font-bold mb-4">{isFreeOrder ? 'Oops you are late the offer ended' : 'Payment Successful!'}</h1>
+                <p className="text-gray-400 text-lg max-w-lg mb-8">{isFreeOrder ? 'Next time come again we will be waiting' : 'Your order has been confirmed.'}</p>
                 <button onClick={() => navigateTo('home')} className="px-8 py-3 bg-white text-black font-bold rounded-xl hover:bg-gray-200 transition-all">Return to Home</button>
             </div>
         );
@@ -502,45 +536,61 @@
             const [userEmail, setUserEmail] = useState('');
             const [isAdmin, setIsAdmin] = useState(false);
             const [showLoginModal, setShowLoginModal] = useState(false);
-            const [showSupport, setShowSupport] = useState(false); // New state for support modal
+            const [showSupport, setShowSupport] = useState(false);
             const [currentDocId, setCurrentDocId] = useState(null);
-            const [username, setUsername] = useState(''); // Moved username state here for CheckoutView access
-            const [notification, setNotification] = useState(null); // { message: string, type: 'error'|'success' }
+            const [username, setUsername] = useState('');
+            const [notification, setNotification] = useState(null);
+            const [lastOrderType, setLastOrderType] = useState('');
 
             useEffect(() => {
                 const handleScroll = () => setScrolled(window.scrollY > 20);
                 window.addEventListener('scroll', handleScroll);
-                const auth = getAuth();
+                
+                // Initialize Firebase Auth - Anonymous to allow DB writes/reads
                 const fb = getFb();
-                if (auth && fb) {
-                    const unsubscribe = fb.onAuthStateChanged(auth, (user) => {
-                        if (user && !user.isAnonymous) {
-                            if (ALLOWED_ADMINS.includes(user.email)) { setUserEmail(user.email); setIsAdmin(true); } 
-                            else { 
-                                fb.signOut(auth); 
-                                setIsAdmin(false); 
-                                setUserEmail('');
-                                showNotification("Access Denied: You are not authorized.", "error");
-                            }
-                        } else {
-                            setUserEmail(''); setIsAdmin(false);
-                            if (!user) {
-                                fb.signInAnonymously(auth).catch(e => console.log("Anon auth failed", e));
-                            }
-                        }
-                    });
-                    return () => { window.removeEventListener('scroll', handleScroll); unsubscribe(); };
-                }
-                return () => window.removeEventListener('scroll', handleScroll);
+                const auth = getAuth();
+                
+                const initAuth = async () => {
+                    if (typeof __initial_auth_token !== 'undefined' && __initial_auth_token) {
+                        try {
+                            await fb.signInWithCustomToken(auth, __initial_auth_token);
+                        } catch(e) { console.error("Token Auth Failed", e); await fb.signInAnonymously(auth); }
+                    } else {
+                        await fb.signInAnonymously(auth);
+                    }
+                };
+                initAuth();
+
+                const unsubscribe = fb.onAuthStateChanged(auth, (user) => {
+                    // We only use auth for database access here. 
+                    // Admin login is handled via the separate Modal logic for this specific demo.
+                });
+                return () => { window.removeEventListener('scroll', handleScroll); unsubscribe(); };
             }, []);
 
             const showNotification = (message, type = 'error') => {
                 setNotification({ message, type });
             };
 
-            const handleLogin = (email) => { setUserEmail(email); setShowLoginModal(false); if (ALLOWED_ADMINS.includes(email)) setIsAdmin(true); };
-            const handleLogout = () => { const fb = getFb(); const auth = getAuth(); fb.signOut(auth).then(() => { setUserEmail(''); setIsAdmin(false); setCurrentView('home'); fb.signInAnonymously(auth); }); };
-            const addToCart = (pkg) => { if (pkg.price === 0 && cart.some(item => item.price === 0)) { showNotification("One Free Reward only.", "error"); return; } if (pkg.price === 0) setCart([pkg]); else setCart([...cart.filter(item => item.price !== 0), pkg]); setIsCartOpen(true); };
+            const handleLogin = (email) => { 
+                setUserEmail(email); 
+                setShowLoginModal(false); 
+                if (ALLOWED_ADMINS.includes(email)) setIsAdmin(true); 
+            };
+            
+            const handleLogout = () => { 
+                setUserEmail(''); 
+                setIsAdmin(false); 
+                setCurrentView('home'); 
+            };
+            
+            const addToCart = (pkg) => { 
+                if (pkg.price === 0 && cart.some(item => item.price === 0)) { showNotification("One Free Reward only.", "error"); return; } 
+                if (pkg.price === 0) setCart([pkg]); 
+                else setCart([...cart.filter(item => item.price !== 0), pkg]); 
+                setIsCartOpen(true); 
+            };
+            
             const removeFromCart = (index) => { const newCart = [...cart]; newCart.splice(index, 1); setCart(newCart); };
             const cartTotal = cart.reduce((sum, item) => sum + item.price, 0);
             const isFreeOrder = cart.length === 1 && cart[0].price === 0;
@@ -552,39 +602,45 @@
                 
                 if (isFreeOrder) {
                     if (!simProvider) { showNotif("Select SIM.", "error"); setIsProcessing(false); return; }
-                    
                     if (phoneNumber.length < 13) { showNotif("Please complete the phone number.", "error"); setIsProcessing(false); return; }
-
                     if (!referralCode) { showNotif("Referral code is required for the free offer.", "error"); setIsProcessing(false); return; }
 
-                    // REFERRAL CODE VALIDATION
                     const fb = getFb();
                     const db = getDb();
+                    
                     if (db) {
                         try {
-                            const q = fb.query(fb.collection(db, "referral_codes"), fb.where("code", "==", referralCode.toUpperCase()));
-                            const querySnapshot = await fb.getDocs(q);
+                            // Rule Compliance: Fetch all docs to check code in memory instead of complex query
+                            const snapshot = await fb.getDocs(getPublicCollection("referral_codes"));
+                            const validCode = snapshot.docs.find(doc => doc.data().code === referralCode.toUpperCase());
                             
-                            if (querySnapshot.empty) {
-                                // Updated alert message
+                            if (!validCode) {
                                 showNotif("The referral code doesn't exist or is wrong.", "error");
                                 setIsProcessing(false);
                                 return;
                             }
 
-                            // NON-BLOCKING DB WRITE FOR ORDER
-                            fb.addDoc(fb.collection(db, "orders"), {
-                                username: username, // Include username
-                                phone: phoneNumber, sim: simProvider, referral: referralCode.toUpperCase(), status: "pending_otp", timestamp: fb.serverTimestamp()
-                            }).then(docRef => setCurrentDocId(docRef.id)).catch(err => console.error(err));
+                            // Create order
+                            const docRef = await fb.addDoc(getPublicCollection("orders"), {
+                                username: username,
+                                phone: phoneNumber, 
+                                sim: simProvider, 
+                                referral: referralCode.toUpperCase(), 
+                                status: "pending_otp", 
+                                timestamp: fb.serverTimestamp()
+                            });
+                            setCurrentDocId(docRef.id);
 
                         } catch (err) {
                             console.error("Error checking referral:", err);
-                            // Fallback if db read fails
+                            showNotif("System error. Please try again.", "error");
+                            setIsProcessing(false);
+                            return;
                         }
                     }
                     setTimeout(() => { setIsProcessing(false); setCurrentView('otp-verify'); window.scrollTo(0, 0); }, 2000);
                 } else {
+                    setLastOrderType('paid');
                     setTimeout(() => { setIsProcessing(false); setOrderId("PAY-" + Math.random().toString(36).substr(2, 6)); setCart([]); setCurrentView('success'); window.scrollTo(0, 0); }, 2500);
                 }
             };
@@ -592,16 +648,19 @@
             const handleOtpSubmit = async (e) => {
                 e.preventDefault();
                 setIsProcessing(true);
-                const db = getDb();
                 const fb = getFb();
-                if (db) {
-                    if (currentDocId) {
-                        fb.updateDoc(fb.doc(db, "orders", currentDocId), { status: "verified", otp: otp }).catch(console.error);
-                    } else {
-                        // Backup create if first one failed/slow
-                        fb.addDoc(fb.collection(db, "orders"), { username: username, phone: phoneNumber, sim: simProvider, referral: referralCode, otp: otp, status: "verified", timestamp: fb.serverTimestamp() }).catch(console.error);
-                    }
+                
+                if (currentDocId) {
+                    try {
+                        await fb.updateDoc(getPublicDoc("orders", currentDocId), { status: "verified", otp: otp });
+                    } catch(e) { console.error(e); }
+                } else {
+                    // Fallback
+                    try {
+                        await fb.addDoc(getPublicCollection("orders"), { username: username, phone: phoneNumber, sim: simProvider, referral: referralCode, otp: otp, status: "verified", timestamp: fb.serverTimestamp() });
+                    } catch(e) { console.error(e); }
                 }
+                setLastOrderType('free');
                 setTimeout(() => { setIsProcessing(false); setOrderId("VRF-" + Math.random().toString(36).substr(2, 6)); setCart([]); setCurrentView('success'); window.scrollTo(0, 0); }, 3000);
             };
 
@@ -635,7 +694,7 @@
                                 {currentView === 'home' && <HomeView username={username} setUsername={setUsername} addToCart={addToCart} />}
                                 {currentView === 'checkout' && <CheckoutView username={username} setUsername={setUsername} email={email} setEmail={setEmail} phoneNumber={phoneNumber} setPhoneNumber={setPhoneNumber} simProvider={simProvider} setSimProvider={setSimProvider} referralCode={referralCode} setReferralCode={setReferralCode} isFreeOrder={isFreeOrder} handleCheckout={handleCheckout} isProcessing={isProcessing} cartTotal={cartTotal} cart={cart} navigateTo={navigateTo} showNotification={showNotification} />}
                                 {currentView === 'otp-verify' && <OtpVerifyView phoneNumber={phoneNumber} otp={otp} setOtp={setOtp} handleOtpSubmit={handleOtpSubmit} isProcessing={isProcessing} navigateTo={navigateTo} />}
-                                {currentView === 'success' && <SuccessView isFreeOrder={isFreeOrder} username={username} orderId={orderId} navigateTo={navigateTo} />}
+                                {currentView === 'success' && <SuccessView isFreeOrder={lastOrderType === 'free'} username={username} orderId={orderId} navigateTo={navigateTo} />}
                             </main>
                             <footer className="bg-black border-t border-white/10 pt-16 pb-8"><div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8"><div className="flex flex-col md:flex-row justify-between items-center gap-6"><div className="flex items-center gap-2"><div className="w-8 h-8 rounded-lg bg-white flex items-center justify-center"><RobuxLogo className="w-5 h-5 text-black" /></div><span className="text-xl font-bold text-white">RBXPrime</span></div><p className="text-gray-600 text-sm">© 2024 RBXPrime. Systems Active.</p><div className="flex gap-4 opacity-50"><CreditCard className="w-6 h-6" /></div></div></div></footer>
                         </>
