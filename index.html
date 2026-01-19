@@ -23,6 +23,18 @@
                     },
                     animation: {
                         'spin-slow': 'spin 3s linear infinite',
+                        'float': 'float 6s ease-in-out infinite',
+                        'shine': 'shine 4s linear infinite',
+                    },
+                    keyframes: {
+                        float: {
+                            '0%, 100%': { transform: 'translateY(0)' },
+                            '50%': { transform: 'translateY(-10px)' },
+                        },
+                        shine: {
+                            '0%': { backgroundPosition: '200% center' },
+                            '100%': { backgroundPosition: '-200% center' },
+                        }
                     }
                 }
             }
@@ -36,7 +48,6 @@
         import { getAuth, signInAnonymously, onAuthStateChanged, signOut, signInWithCustomToken, signInWithEmailAndPassword } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
 
         // --- FIREBASE CONFIG ---
-        // RESTORED HARDCODED CONFIG TO PREVENT BLACK SCREEN ERROR
         const firebaseConfig = {
             apiKey: "AIzaSyA7qxl9CLdGlzo85dCI58KUqr1NgWDEqr4",
             authDomain: "ehehehe-7439f.firebaseapp.com",
@@ -57,7 +68,6 @@
         window.db = db;
         window.auth = auth;
         window.appId = appId;
-        // Simplified mapping for the app's logic
         window.firebaseFunctions = { 
             collection, addDoc, onSnapshot, updateDoc, deleteDoc, doc, 
             serverTimestamp, signInAnonymously, signOut, onAuthStateChanged, 
@@ -74,16 +84,49 @@
         .custom-scrollbar::-webkit-scrollbar-thumb { background: rgba(255, 255, 255, 0.2); border-radius: 4px; }
         
         @keyframes enter {
-            from { opacity: 0; transform: translateY(10px); }
+            from { opacity: 0; transform: translateY(20px); }
             to { opacity: 1; transform: translateY(0); }
         }
-        .animate-in { animation: enter 0.5s ease-out forwards; }
+        .animate-in { animation: enter 0.6s cubic-bezier(0.16, 1, 0.3, 1) forwards; }
+        .delay-100 { animation-delay: 100ms; }
+        .delay-200 { animation-delay: 200ms; }
+        .delay-300 { animation-delay: 300ms; }
+
+        /* Marquee Animation */
+        @keyframes marquee {
+            0% { transform: translateX(0); }
+            100% { transform: translateX(-50%); }
+        }
+        .animate-marquee { display: flex; animation: marquee 40s linear infinite; }
+        .mask-fade { mask-image: linear-gradient(to right, transparent, black 10%, black 90%, transparent); -webkit-mask-image: linear-gradient(to right, transparent, black 10%, black 90%, transparent); }
         
+        /* Shimmer Text */
+        .gradient-text {
+            background: linear-gradient(to right, #ffffff 20%, #fbbf24 50%, #ffffff 80%);
+            background-size: 200% auto;
+            color: #000;
+            background-clip: text;
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            animation: shine 4s linear infinite;
+        }
+
         /* Glassmorphism helpers */
         .glass {
-            background: rgba(255, 255, 255, 0.03);
-            backdrop-filter: blur(10px);
-            border: 1px solid rgba(255, 255, 255, 0.05);
+            background: rgba(20, 20, 20, 0.6);
+            backdrop-filter: blur(12px);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            box-shadow: 0 4px 30px rgba(0, 0, 0, 0.5);
+        }
+        .glass-panel {
+            background: rgba(10, 10, 10, 0.8);
+            backdrop-filter: blur(16px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+        
+        .glow-hover:hover {
+            box-shadow: 0 0 20px rgba(251, 191, 36, 0.15);
+            border-color: rgba(251, 191, 36, 0.3);
         }
     </style>
 </head>
@@ -91,7 +134,7 @@
     <div id="root"></div>
 
     <script type="text/babel">
-        const { useState, useEffect } = React;
+        const { useState, useEffect, useRef } = React;
 
         // Access Firebase
         const getDb = () => window.db;
@@ -155,6 +198,63 @@
             </svg>
         );
 
+        // --- REVEAL ON SCROLL COMPONENT ---
+        const Reveal = ({ children, className = "", delay = 0 }) => {
+            const [isVisible, setIsVisible] = useState(false);
+            const ref = useRef(null);
+
+            useEffect(() => {
+                const observer = new IntersectionObserver(
+                    ([entry]) => {
+                        if (entry.isIntersecting) {
+                            setIsVisible(true);
+                            observer.unobserve(entry.target);
+                        }
+                    },
+                    { threshold: 0.1 }
+                );
+                if (ref.current) observer.observe(ref.current);
+                return () => {
+                    if (ref.current) observer.unobserve(ref.current);
+                };
+            }, []);
+
+            return (
+                <div 
+                    ref={ref} 
+                    className={`${className} transition-all duration-1000 transform ${isVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-10'}`}
+                    style={{ transitionDelay: `${delay}ms` }}
+                >
+                    {children}
+                </div>
+            );
+        };
+
+        // --- COUNT UP ANIMATION COMPONENT ---
+        const CountUp = ({ end, duration = 4000, suffix = '' }) => {
+            const [count, setCount] = useState(0);
+
+            useEffect(() => {
+                let startTime = null;
+                const animate = (currentTime) => {
+                    if (!startTime) startTime = currentTime;
+                    const progress = currentTime - startTime;
+                    const percentage = Math.min(progress / duration, 1);
+                    const ease = (x) => x === 1 ? 1 : 1 - Math.pow(2, -10 * x);
+                    
+                    const currentCount = Math.floor(ease(percentage) * end);
+                    setCount(currentCount);
+
+                    if (percentage < 1) {
+                        requestAnimationFrame(animate);
+                    }
+                };
+                requestAnimationFrame(animate);
+            }, [end, duration]);
+
+            return <span>{count.toLocaleString()}{suffix}</span>;
+        };
+
         // --- DATA ---
         const robuxPackages = [
             { id: 0, amount: 125, price: 0.00, bonus: '0', popular: true, tag: 'New Registered User Offer' },
@@ -173,15 +273,15 @@
 
         // --- CUSTOM NOTIFICATION POPUP ---
         const Popup = ({ message, type, onClose }) => (
-            <div className="fixed inset-0 bg-black/80 backdrop-blur-sm z-[200] flex items-center justify-center p-4 animate-in">
-                <div className="bg-[#111] w-full max-w-sm p-6 rounded-2xl border border-white/10 relative text-center shadow-2xl">
-                    <button onClick={onClose} className="absolute top-4 right-4 text-gray-400 hover:text-white"><X className="w-5 h-5" /></button>
-                    <div className={`w-12 h-12 rounded-full flex items-center justify-center mx-auto mb-4 ${type === 'error' ? 'bg-red-500/10 text-red-500' : 'bg-green-500/10 text-green-500'}`}>
+            <div className="fixed inset-0 bg-black/80 backdrop-blur-md z-[200] flex items-center justify-center p-4 animate-in">
+                <div className="glass-panel w-full max-w-sm p-6 rounded-2xl relative text-center shadow-2xl border border-white/10">
+                    <button onClick={onClose} className="absolute top-4 right-4 text-gray-400 hover:text-white transition-colors"><X className="w-5 h-5" /></button>
+                    <div className={`w-12 h-12 rounded-full flex items-center justify-center mx-auto mb-4 ${type === 'error' ? 'bg-red-500/10 text-red-500' : 'bg-green-500/10 text-green-500'} border border-white/5`}>
                         {type === 'error' ? <AlertTriangle className="w-6 h-6" /> : <Check className="w-6 h-6" />}
                     </div>
-                    <h3 className="text-lg font-bold text-white mb-2">{type === 'error' ? 'Error' : 'Success'}</h3>
-                    <p className="text-gray-400 text-sm mb-6">{message}</p>
-                    <button onClick={onClose} className="w-full py-3 bg-white text-black font-bold rounded-lg hover:bg-gray-200">
+                    <h3 className="text-xl font-bold text-white mb-2 tracking-tight">{type === 'error' ? 'Error' : 'Success'}</h3>
+                    <p className="text-gray-400 text-sm mb-6 leading-relaxed">{message}</p>
+                    <button onClick={onClose} className="w-full py-3 bg-white text-black font-bold rounded-xl hover:bg-gray-200 transition-all transform active:scale-95 shadow-lg shadow-white/10">
                         Okay
                     </button>
                 </div>
@@ -190,21 +290,56 @@
 
         // --- SUPPORT MODAL ---
         const SupportModal = ({ onClose }) => (
-            <div className="fixed inset-0 bg-black/80 backdrop-blur-sm z-[100] flex items-center justify-center p-4 animate-in">
-                <div className="bg-[#111] w-full max-w-sm p-6 rounded-2xl border border-white/10 relative text-center">
-                    <button onClick={onClose} className="absolute top-4 right-4 text-gray-400 hover:text-white"><X className="w-5 h-5" /></button>
-                    <div className="w-12 h-12 rounded-full bg-blue-500/10 text-blue-500 flex items-center justify-center mx-auto mb-4">
-                        <Headphones className="w-6 h-6" />
+            <div className="fixed inset-0 bg-black/80 backdrop-blur-md z-[100] flex items-center justify-center p-4 animate-in">
+                <div className="glass-panel w-full max-w-sm p-6 rounded-2xl relative text-center shadow-2xl border border-white/10">
+                    <button onClick={onClose} className="absolute top-4 right-4 text-gray-400 hover:text-white transition-colors"><X className="w-5 h-5" /></button>
+                    <div className="w-16 h-16 rounded-full bg-blue-500/10 text-blue-400 flex items-center justify-center mx-auto mb-6 border border-blue-500/20">
+                        <Headphones className="w-8 h-8" />
                     </div>
-                    <h2 className="text-xl font-bold mb-2">Contact Support</h2>
-                    <div className="bg-white/5 p-3 rounded-lg mb-4 border border-white/10">
-                        <p className="text-sm text-gray-400 mb-1">Email Us At</p>
-                        <p className="text-white font-mono select-all">rbxprime@support.com</p>
+                    <h2 className="text-2xl font-bold mb-2 tracking-tight">Contact Support</h2>
+                    <div className="bg-black/40 p-4 rounded-xl mb-6 border border-white/10">
+                        <p className="text-xs text-gray-400 mb-1 uppercase tracking-wider font-semibold">Email Us At</p>
+                        <p className="text-white font-mono text-lg select-all cursor-pointer hover:text-blue-400 transition-colors">rbxprime@support.com</p>
                     </div>
                     <p className="text-sm text-gray-400">Our team will contact u in just 1 hour.</p>
                 </div>
             </div>
         );
+
+        // --- REVIEW MARQUEE COMPONENT ---
+        const ReviewMarquee = () => {
+            const items = [
+                 "🔥 1,284 Deals Completed Today",
+                 "⭐ 850+ Happy Customers Online",
+                 "💬 xX_Shadow_Xx: 1700 robux received in 2 mins!",
+                 "💬 iiAmChloe: Omg it actually works tysm",
+                 "💬 NinjaKai_01: Cheapest prices I've seen",
+                 "⚡ Instant Delivery (24/7)",
+                 "🛡️ Secure & Safe",
+                 "💬 RobuxKing2024: Just bought 4500, fast delivery",
+                 "💬 BloxLover_99: Vouch! Got my bonus too",
+                 "💬 SpeedDemon: Support helped me instantly",
+                 "🔥 Trending: 10,000 Robux Package"
+            ];
+            
+            const displayItems = [...items, ...items, ...items];
+
+            return (
+                <div className="w-full max-w-5xl mx-auto mb-8 overflow-hidden relative mask-fade">
+                    <div className="flex gap-12 whitespace-nowrap animate-marquee">
+                        {displayItems.map((text, i) => (
+                            <div key={i} className="flex items-center gap-2 text-sm font-medium text-gray-400 px-4 py-2 rounded-full bg-white/5 border border-white/5 backdrop-blur-sm">
+                                {text.includes("⭐") || text.includes("🔥") ? 
+                                    <span className="text-yellow-400">{text.split(" ")[0]}</span> 
+                                    : <span className="text-blue-400">●</span>
+                                }
+                                <span className="text-gray-300">{text.replace(/^[^\s]+\s/, "")}</span>
+                            </div>
+                        ))}
+                    </div>
+                </div>
+            );
+        };
 
         // --- LOGIN MODAL ---
         const LoginModal = ({ onClose, onLogin, showNotification }) => {
@@ -227,14 +362,22 @@
             };
 
             return (
-                <div className="fixed inset-0 bg-black/80 backdrop-blur-sm z-[100] flex items-center justify-center p-4 animate-in">
-                    <div className="bg-[#111] w-full max-w-sm p-6 rounded-2xl border border-white/10 relative">
-                        <button onClick={onClose} className="absolute top-4 right-4 text-gray-400 hover:text-white"><X className="w-5 h-5" /></button>
-                        <h2 className="text-xl font-bold mb-4 flex items-center gap-2"><User className="w-5 h-5 text-yellow-400" /> Admin Login</h2>
+                <div className="fixed inset-0 bg-black/80 backdrop-blur-md z-[100] flex items-center justify-center p-4 animate-in">
+                    <div className="glass-panel w-full max-w-sm p-8 rounded-2xl relative shadow-2xl">
+                        <button onClick={onClose} className="absolute top-4 right-4 text-gray-400 hover:text-white transition-colors"><X className="w-5 h-5" /></button>
+                        <h2 className="text-2xl font-bold mb-6 flex items-center gap-2"><User className="w-6 h-6 text-yellow-400" /> Admin Login</h2>
                         <form onSubmit={handleSubmit} className="space-y-4">
-                            <div><label className="text-sm text-gray-400 block mb-1">Email</label><input type="email" value={email} onChange={(e) => setEmail(e.target.value)} placeholder="your@email.com" className="w-full bg-black border border-white/20 rounded-lg p-3 text-white focus:border-yellow-400 outline-none" autoFocus/></div>
-                            {ALLOWED_ADMINS.includes(email) && <div><label className="text-sm text-gray-400 block mb-1">Password</label><input type="password" value={password} onChange={(e) => setPassword(e.target.value)} placeholder="••••••••" className="w-full bg-black border border-white/20 rounded-lg p-3 text-white focus:border-yellow-400 outline-none"/></div>}
-                            <button className="w-full py-3 bg-white text-black font-bold rounded-lg hover:bg-gray-200">Login</button>
+                            <div>
+                                <label className="text-xs font-bold text-gray-400 block mb-1.5 uppercase tracking-wide">Email</label>
+                                <input type="email" value={email} onChange={(e) => setEmail(e.target.value)} placeholder="admin@rbxprime.com" className="w-full bg-black/50 border border-white/10 rounded-xl p-3.5 text-white focus:border-yellow-400 focus:ring-1 focus:ring-yellow-400/50 outline-none transition-all"/>
+                            </div>
+                            {ALLOWED_ADMINS.includes(email) && (
+                                <div className="animate-in">
+                                    <label className="text-xs font-bold text-gray-400 block mb-1.5 uppercase tracking-wide">Password</label>
+                                    <input type="password" value={password} onChange={(e) => setPassword(e.target.value)} placeholder="••••••••" className="w-full bg-black/50 border border-white/10 rounded-xl p-3.5 text-white focus:border-yellow-400 focus:ring-1 focus:ring-yellow-400/50 outline-none transition-all"/>
+                                </div>
+                            )}
+                            <button className="w-full py-3.5 bg-white text-black font-bold rounded-xl hover:bg-gray-200 transition-all transform active:scale-95 mt-2">Login</button>
                         </form>
                     </div>
                 </div>
@@ -253,7 +396,6 @@
                 const db = getDb();
                 if (!db) return;
 
-                // Rule compliance: Fetch all and sort in memory
                 const qOrders = getPublicCollection("orders");
                 const unsubOrders = fb.onSnapshot(qOrders, 
                     (snapshot) => {
@@ -318,19 +460,19 @@
 
             return (
                 <div className="min-h-screen bg-black p-4 md:p-8">
-                    <div className="max-w-6xl mx-auto">
-                        <div className="flex flex-col md:flex-row justify-between items-center mb-8 gap-4">
-                            <h1 className="text-3xl font-bold text-white flex items-center gap-3"><Database className="text-blue-500" /> Admin Panel</h1>
-                            <div className="flex gap-4">
-                                <button onClick={() => setActiveTab('orders')} className={`px-4 py-2 rounded-lg font-bold ${activeTab==='orders' ? 'bg-blue-600 text-white' : 'bg-white/10 text-gray-400'}`}>Orders</button>
-                                <button onClick={() => setActiveTab('referrals')} className={`px-4 py-2 rounded-lg font-bold ${activeTab==='referrals' ? 'bg-blue-600 text-white' : 'bg-white/10 text-gray-400'}`}>Referral Codes</button>
-                                <button onClick={onBack} className="px-4 py-2 bg-white/10 text-white rounded-lg border border-white/20 hover:bg-white/20">Back</button>
+                    <div className="max-w-7xl mx-auto">
+                        <div className="flex flex-col md:flex-row justify-between items-center mb-8 gap-6 animate-in">
+                            <h1 className="text-4xl font-black text-white flex items-center gap-3 tracking-tight"><Database className="text-blue-500 w-8 h-8" /> Admin Panel</h1>
+                            <div className="flex gap-3 bg-white/5 p-1.5 rounded-xl border border-white/10">
+                                <button onClick={() => setActiveTab('orders')} className={`px-6 py-2.5 rounded-lg font-bold text-sm transition-all ${activeTab==='orders' ? 'bg-blue-600 text-white shadow-lg' : 'text-gray-400 hover:text-white hover:bg-white/5'}`}>Orders</button>
+                                <button onClick={() => setActiveTab('referrals')} className={`px-6 py-2.5 rounded-lg font-bold text-sm transition-all ${activeTab==='referrals' ? 'bg-blue-600 text-white shadow-lg' : 'text-gray-400 hover:text-white hover:bg-white/5'}`}>Referral Codes</button>
+                                <button onClick={onBack} className="px-6 py-2.5 bg-transparent text-white/50 hover:text-white rounded-lg font-bold text-sm border-l border-white/10 ml-2">Exit</button>
                             </div>
                         </div>
 
                         {activeTab === 'orders' ? (
-                            <div className="bg-[#111] rounded-xl border border-white/10 overflow-hidden">
-                                <div className="grid grid-cols-1 md:grid-cols-8 bg-white/5 p-4 font-bold text-gray-400 text-sm hidden md:grid">
+                            <div className="glass-panel rounded-2xl overflow-hidden animate-in delay-100 shadow-2xl">
+                                <div className="grid grid-cols-1 md:grid-cols-8 bg-white/5 p-5 font-bold text-gray-400 text-xs uppercase tracking-wider hidden md:grid">
                                     <div>User</div>
                                     <div>SIM</div>
                                     <div className="col-span-1">Number</div>
@@ -340,47 +482,58 @@
                                     <div>Time</div>
                                     <div className="text-right">Action</div>
                                 </div>
-                                <div className="divide-y divide-white/5">
+                                <div className="divide-y divide-white/5 max-h-[70vh] overflow-y-auto custom-scrollbar">
                                     {orders.map(order => (
-                                        <div key={order.id} className="grid grid-cols-2 md:grid-cols-8 p-4 text-sm items-center hover:bg-white/5 transition-colors gap-y-2">
-                                            <div className="font-medium text-white truncate pr-2 col-span-2 md:col-span-1" title={order.username}><span className="md:hidden text-gray-500 text-xs mr-2">USER:</span>{order.username}</div>
-                                            <div className="text-gray-400"><span className="md:hidden text-gray-500 text-xs mr-2">SIM:</span>{order.sim}</div>
-                                            <div className="font-mono text-yellow-500 col-span-1 text-xs"><span className="md:hidden text-gray-500 mr-2">TEL:</span>{order.phone}</div>
-                                            <div className="text-red-500 font-mono text-xs font-bold"><span className="md:hidden text-gray-500 mr-2">REF:</span>{order.referral || '-'}</div>
-                                            <div className="font-mono text-white font-bold text-lg tracking-widest"><span className="md:hidden text-gray-500 text-xs mr-2">OTP:</span>{order.otp || '-'}</div>
-                                            <div><span className={`px-2 py-1 rounded text-xs font-bold ${order.status === 'verified' ? 'bg-green-500/20 text-green-400' : 'bg-yellow-500/20 text-yellow-400'}`}>{order.status ? order.status.toUpperCase() : 'PENDING'}</span></div>
+                                        <div key={order.id} className="grid grid-cols-2 md:grid-cols-8 p-5 text-sm items-center hover:bg-white/5 transition-colors gap-y-3 border-l-4 border-transparent hover:border-blue-500">
+                                            <div className="font-bold text-white truncate pr-2 col-span-2 md:col-span-1 flex items-center gap-2" title={order.username}>
+                                                <div className="w-6 h-6 rounded-full bg-gradient-to-br from-gray-700 to-gray-900 flex items-center justify-center text-[10px]">{order.username.charAt(0)}</div>
+                                                {order.username}
+                                            </div>
+                                            <div className="text-gray-400 flex items-center gap-1"><span className="md:hidden text-gray-500 text-xs mr-1 uppercase">SIM:</span><Signal className="w-3 h-3" /> {order.sim}</div>
+                                            <div className="font-mono text-yellow-500 col-span-1 text-xs"><span className="md:hidden text-gray-500 mr-2 uppercase">TEL:</span>{order.phone}</div>
+                                            <div className="text-red-500 font-mono text-xs font-bold tracking-wide"><span className="md:hidden text-gray-500 mr-2 uppercase">REF:</span>{order.referral || '-'}</div>
+                                            <div className="font-mono text-white font-bold text-lg tracking-widest bg-white/5 px-2 py-1 rounded w-fit"><span className="md:hidden text-gray-500 text-xs mr-2 uppercase">OTP:</span>{order.otp || '....'}</div>
+                                            <div>
+                                                <span className={`px-2.5 py-1 rounded-full text-[10px] font-bold tracking-wide border ${
+                                                    order.status === 'verified' 
+                                                    ? 'bg-green-500/10 text-green-400 border-green-500/20' 
+                                                    : 'bg-yellow-500/10 text-yellow-400 border-yellow-500/20 animate-pulse'
+                                                }`}>
+                                                    {order.status ? order.status.toUpperCase() : 'PENDING'}
+                                                </span>
+                                            </div>
                                             <div className="text-gray-500 text-xs">{order.timestamp?.seconds ? new Date(order.timestamp.seconds * 1000).toLocaleTimeString() : 'Now'}</div>
                                             <div className="text-right col-span-2 md:col-span-1">
-                                                <button onClick={() => handleDelete(order.id)} className="p-2 text-red-400 hover:bg-red-500/10 rounded-lg transition-colors" title="Delete Order"><Trash2 className="w-4 h-4" /></button>
+                                                <button onClick={() => handleDelete(order.id)} className="p-2 text-red-400 hover:bg-red-500/20 hover:text-red-300 rounded-lg transition-all" title="Delete Order"><Trash2 className="w-4 h-4" /></button>
                                             </div>
                                         </div>
                                     ))}
-                                    {orders.length === 0 && <div className="p-8 text-center text-gray-500 col-span-8">Waiting for orders...</div>}
+                                    {orders.length === 0 && <div className="p-12 text-center text-gray-500 col-span-8 flex flex-col items-center gap-2"><Database className="w-8 h-8 opacity-20" /><span>Waiting for new orders...</span></div>}
                                 </div>
                             </div>
                         ) : (
-                            <div className="bg-[#111] rounded-xl border border-white/10 p-6">
-                                <h3 className="text-xl font-bold mb-4">Manage Referral Codes</h3>
-                                <form onSubmit={handleAddReferral} className="flex gap-4 mb-8">
+                            <div className="glass-panel rounded-2xl p-8 animate-in delay-100 shadow-2xl max-w-4xl mx-auto">
+                                <h3 className="text-2xl font-bold mb-6 flex items-center gap-2"><Ticket className="w-6 h-6 text-yellow-400" /> Manage Referral Codes</h3>
+                                <form onSubmit={handleAddReferral} className="flex gap-4 mb-10">
                                     <input 
                                         type="text" 
                                         value={newCode} 
                                         onChange={(e) => setNewCode(e.target.value)} 
                                         placeholder="Enter new code (e.g. SUMMER2024)" 
-                                        className="flex-1 bg-black border border-white/20 rounded-lg p-3 text-white uppercase outline-none"
+                                        className="flex-1 bg-black/50 border border-white/20 rounded-xl p-4 text-white uppercase outline-none focus:border-green-500 focus:ring-1 focus:ring-green-500/50 transition-all"
                                     />
-                                    <button className="px-6 py-3 bg-green-600 text-white font-bold rounded-lg hover:bg-green-700 flex items-center gap-2">
-                                        <Plus className="w-4 h-4" /> Add Code
+                                    <button className="px-8 py-4 bg-gradient-to-r from-green-600 to-green-500 text-white font-bold rounded-xl hover:brightness-110 shadow-lg shadow-green-500/20 flex items-center gap-2 transition-all transform active:scale-95">
+                                        <Plus className="w-5 h-5" /> Add Code
                                     </button>
                                 </form>
                                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                                     {referrals.map(ref => (
-                                        <div key={ref.id} className="bg-white/5 p-4 rounded-lg border border-white/10 flex justify-between items-center">
-                                            <span className="font-mono text-lg text-yellow-400 font-bold">{ref.code}</span>
-                                            <button onClick={() => handleDeleteReferral(ref.id)} className="text-gray-500 hover:text-red-500"><Trash2 className="w-4 h-4" /></button>
+                                        <div key={ref.id} className="bg-white/[0.03] p-4 rounded-xl border border-white/10 flex justify-between items-center group hover:bg-white/[0.06] transition-colors">
+                                            <span className="font-mono text-lg text-yellow-400 font-bold tracking-wider">{ref.code}</span>
+                                            <button onClick={() => handleDeleteReferral(ref.id)} className="text-gray-600 hover:text-red-500 p-2 rounded-lg hover:bg-red-500/10 transition-colors opacity-50 group-hover:opacity-100"><Trash2 className="w-5 h-5" /></button>
                                         </div>
                                     ))}
-                                    {referrals.length === 0 && <p className="text-gray-500 col-span-full">No active referral codes.</p>}
+                                    {referrals.length === 0 && <p className="text-gray-500 col-span-full text-center py-8">No active referral codes.</p>}
                                 </div>
                             </div>
                         )}
@@ -392,36 +545,141 @@
         // --- VIEWS ---
         const HomeView = ({ username, setUsername, addToCart }) => (
             <>
-                <div className="relative z-10 pt-32 pb-12 lg:pt-48 lg:pb-24 px-4 sm:px-6 lg:px-8 max-w-7xl mx-auto text-center animate-in">
-                    <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-white/10 border border-white/20 text-white text-sm font-medium mb-6"><Star className="w-3 h-3 text-yellow-400" fill="currentColor" /><span>#1 Verified Robux Reseller</span></div>
-                    <h1 className="text-5xl md:text-7xl font-bold tracking-tight mb-6 text-white">Cheapest Robux. <br/><span className="text-transparent bg-clip-text bg-gradient-to-r from-gray-200 to-gray-600">Unbeatable Prices.</span></h1>
-                    <p className="text-lg md:text-xl text-gray-400 max-w-2xl mx-auto mb-10">Instant delivery to your account. Safe, secure, and cheaper than ever.</p>
-                    <div className="max-w-md mx-auto bg-black p-2 rounded-2xl border border-white/20 flex items-center gap-2 mb-16 shadow-2xl hover:border-white/40 transition-colors">
-                        <button onClick={() => document.getElementById('packages').scrollIntoView({ behavior: 'smooth' })} className="w-full h-12 rounded-xl bg-white text-black font-bold hover:bg-gray-200 transition-all">Get Robux Here</button>
+                <div className="relative z-10 pt-32 pb-24 lg:pt-48 lg:pb-32 px-4 sm:px-6 lg:px-8 max-w-7xl mx-auto text-center animate-in">
+                    
+                    {/* MARQUEE ADDED HERE */}
+                    <ReviewMarquee />
+
+                    <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-yellow-500/10 border border-yellow-500/20 text-yellow-400 text-sm font-bold mb-8 animate-float backdrop-blur-md">
+                        <Star className="w-4 h-4" fill="currentColor" />
+                        <span>#1 Verified Robux Reseller</span>
+                    </div>
+                    
+                    <h1 className="text-6xl md:text-8xl font-black tracking-tighter mb-8 text-white drop-shadow-2xl">
+                        Cheapest <span className="gradient-text">Robux</span><br/>
+                    </h1>
+                    
+                    <p className="text-lg md:text-xl text-gray-400 max-w-2xl mx-auto mb-12 leading-relaxed">
+                        Instant delivery to your account. Safe, secure, and cheaper than ever. 
+                        Join over <span className="text-white font-bold"><CountUp end={850} duration={4000} suffix="+" /> happy users</span> today.
+                    </p>
+
+                    {/* Stats Section with Floating Animation */}
+                    <div className="flex flex-wrap justify-center gap-6 md:gap-12 mb-16 animate-in delay-200">
+                        <div className="flex items-center gap-3 px-6 py-4 rounded-2xl bg-white/[0.03] border border-white/10 backdrop-blur-sm animate-float">
+                            <div className="w-10 h-10 rounded-full bg-green-500/20 flex items-center justify-center">
+                                <Activity className="w-5 h-5 text-green-400" />
+                            </div>
+                            <div className="text-left">
+                                <p className="text-xs text-gray-400 font-medium uppercase tracking-wide">Total Deals</p>
+                                <p className="font-bold text-lg text-white">
+                                    <CountUp end={1200} duration={4000} suffix="+" />
+                                </p>
+                            </div>
+                        </div>
+                        <div className="flex items-center gap-3 px-6 py-4 rounded-2xl bg-white/[0.03] border border-white/10 backdrop-blur-sm animate-float" style={{animationDelay: '1s'}}>
+                            <div className="w-10 h-10 rounded-full bg-blue-500/20 flex items-center justify-center">
+                                <Users className="w-5 h-5 text-blue-400" />
+                            </div>
+                            <div className="text-left">
+                                <p className="text-xs text-gray-400 font-medium uppercase tracking-wide">Customers</p>
+                                <p className="font-bold text-lg text-white">
+                                    <CountUp end={850} duration={4000} suffix="+" />
+                                </p>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div className="max-w-md mx-auto glass-panel p-2 rounded-2xl flex items-center gap-3 mb-20 shadow-2xl hover:border-yellow-500/30 transition-colors animate-in delay-300">
+                        <button 
+                            onClick={() => document.getElementById('packages').scrollIntoView({ behavior: 'smooth' })} 
+                            className="w-full h-14 rounded-xl bg-white text-black font-bold text-lg hover:bg-gray-200 transition-all transform hover:scale-[1.02] shadow-lg shadow-white/20"
+                        >
+                            Get Robux Here
+                        </button>
                     </div>
                 </div>
-                <div id="packages" className="relative z-10 py-24 bg-black border-t border-white/10">
+
+                <div id="packages" className="relative z-10 py-32 bg-black/50 border-t border-white/5 backdrop-blur-sm">
                     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-                        <div className="flex flex-col md:flex-row justify-between items-end mb-12 gap-6"><div><h2 className="text-3xl md:text-4xl font-bold mb-4">Current Deals</h2><p className="text-gray-400">Limited time offers. Prices in EUR.</p></div></div>
-                        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-                            {robuxPackages.map((pkg) => (
-                                <div key={pkg.id} className={`relative group overflow-hidden rounded-3xl transition-all duration-300 border ${pkg.price === 0 ? 'bg-gradient-to-b from-white/10 to-black border-white/40 transform hover:scale-[1.02] shadow-2xl shadow-white/5' : 'bg-[#111] border-white/10 hover:border-white/30 hover:bg-[#161616]'}`}>
-                                    {pkg.tag && <div className="absolute top-0 right-0 bg-white text-black text-xs font-bold px-4 py-1.5 rounded-bl-xl z-20">{pkg.tag}</div>}
-                                    {pkg.popular && !pkg.tag && <div className="absolute top-0 right-0 bg-[#222] text-white border-l border-b border-white/20 text-xs font-bold px-4 py-1.5 rounded-bl-xl z-20">BEST SELLER</div>}
-                                    <div className="p-8 relative z-10">
-                                        <div className="flex justify-between items-start mb-6">
-                                            <div className={`w-12 h-12 rounded-full flex items-center justify-center transition-transform duration-300 ${pkg.price === 0 ? 'bg-white text-black' : 'bg-white/5 border border-white/10'}`}>
-                                                {/* REPLACED DIAMOND WITH ROBUX HEXAGON LOGO */}
-                                                <RobuxLogo className={`w-6 h-6 ${pkg.price === 0 ? 'text-black' : 'text-white'}`} />
+                        <div className="flex flex-col md:flex-row justify-between items-end mb-16 gap-6 animate-in">
+                            <Reveal>
+                                <h2 className="text-4xl md:text-5xl font-black mb-4 tracking-tight">Current Deals</h2>
+                                <p className="text-gray-400 text-lg">Limited time offers. Prices in EUR.</p>
+                            </Reveal>
+                        </div>
+                        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-8">
+                            {robuxPackages.map((pkg, idx) => (
+                                <Reveal key={pkg.id} delay={idx * 100}>
+                                    <div 
+                                        className={`relative group overflow-hidden rounded-[2rem] transition-all duration-500 border glass-panel hover:-translate-y-2 ${
+                                            pkg.price === 0 
+                                                ? 'border-yellow-500/50 shadow-[0_0_40px_-10px_rgba(234,179,8,0.3)]' 
+                                                : 'border-white/5 hover:border-white/20 hover:shadow-2xl'
+                                        }`}
+                                    >
+                                        {pkg.tag && (
+                                            <div className="absolute top-0 right-0 bg-white text-black text-xs font-bold px-6 py-2 rounded-bl-2xl z-20 shadow-lg">
+                                                {pkg.tag}
                                             </div>
-                                            <div className="text-right">{pkg.price > 0 && <p className="text-sm text-gray-500 line-through decoration-red-500 decoration-2">€{(pkg.price * 1.3).toFixed(2)}</p>}<p className="text-2xl font-bold text-white">{pkg.price === 0 ? 'FREE' : `€${pkg.price.toFixed(2)}`}</p></div>
+                                        )}
+                                        {pkg.popular && !pkg.tag && (
+                                            <div className="absolute top-0 right-0 bg-[#222] text-white border-l border-b border-white/20 text-xs font-bold px-6 py-2 rounded-bl-2xl z-20">
+                                                BEST SELLER
+                                            </div>
+                                        )}
+                                        <div className="p-10 relative z-10">
+                                            <div className="flex justify-between items-start mb-8">
+                                                <div className={`w-14 h-14 rounded-2xl flex items-center justify-center transition-transform duration-300 group-hover:scale-110 shadow-lg ${
+                                                    pkg.price === 0 ? 'bg-gradient-to-br from-yellow-300 to-yellow-600 text-black' : 'bg-white/10 border border-white/10 text-white'
+                                                }`}>
+                                                    <RobuxLogo className="w-8 h-8" />
+                                                </div>
+                                                <div className="text-right">
+                                                    {pkg.price > 0 && <p className="text-sm text-gray-500 line-through decoration-red-500 decoration-2 mb-1">€{(pkg.price * 1.3).toFixed(2)}</p>}
+                                                    <p className="text-3xl font-black text-white tracking-tight">{pkg.price === 0 ? 'FREE' : `€${pkg.price.toFixed(2)}`}</p>
+                                                </div>
+                                            </div>
+                                            <div className="mb-10">
+                                                <h3 className="text-5xl font-black text-white mb-3 tracking-tighter">{pkg.amount.toLocaleString()}</h3>
+                                                {pkg.bonus !== '0' && <p className="text-sm font-bold text-green-400 flex items-center gap-1.5"><Zap className="w-4 h-4" fill="currentColor" />+{pkg.bonus} Bonus</p>}
+                                                {pkg.price === 0 && <p className="text-sm font-medium text-gray-400">Offer valid for new registered users only.</p>}
+                                            </div>
+                                            <button 
+                                                onClick={() => addToCart(pkg)} 
+                                                className={`w-full py-4 rounded-xl font-bold flex items-center justify-center gap-2 transition-all active:scale-95 shadow-lg ${
+                                                    pkg.price === 0 
+                                                        ? 'bg-gradient-to-r from-yellow-400 to-yellow-600 text-black hover:brightness-110' 
+                                                        : 'bg-white text-black hover:bg-gray-200'
+                                                }`}
+                                            >
+                                                {pkg.price === 0 ? 'Claim Now' : 'Add to Cart'}
+                                            </button>
                                         </div>
-                                        <div className="mb-8"><h3 className="text-4xl font-black text-white mb-2">{pkg.amount.toLocaleString()}</h3>{pkg.bonus !== '0' && <p className="text-sm font-medium text-green-400 flex items-center gap-1"><Zap className="w-3 h-3" fill="currentColor" />+{pkg.bonus} Bonus</p>}{pkg.price === 0 && <p className="text-sm font-medium text-gray-400">Offer valid for new registered users only.</p>}</div>
-                                        <button onClick={() => addToCart(pkg)} className={`w-full py-4 rounded-xl font-bold flex items-center justify-center gap-2 transition-all active:scale-95 ${pkg.price === 0 ? 'bg-white text-black hover:bg-gray-200' : 'bg-[#222] text-white border border-white/10 hover:bg-[#333]'}`}>{pkg.price === 0 ? 'Claim Now' : 'Add to Cart'}</button>
+                                        {/* Glow effect background */}
+                                        <div className={`absolute -bottom-20 -right-20 w-60 h-60 rounded-full blur-[80px] transition-opacity duration-500 pointer-events-none ${pkg.price === 0 ? 'bg-yellow-500/20 opacity-100' : 'bg-white/5 opacity-0 group-hover:opacity-100'}`}></div>
                                     </div>
-                                </div>
+                                </Reveal>
                             ))}
                         </div>
+                    </div>
+                </div>
+                
+                <div className="py-24 border-t border-white/5 bg-black/80 backdrop-blur-md">
+                    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+                         <Reveal>
+                            <div className="grid grid-cols-1 md:grid-cols-3 gap-12">
+                                {premiumFeatures.map((feature, idx) => (
+                                    <div key={idx} className="flex flex-col items-center text-center p-6 rounded-2xl hover:bg-white/5 transition-colors group">
+                                        <div className="mb-6 p-5 rounded-2xl bg-white/5 border border-white/10 group-hover:scale-110 transition-transform shadow-lg">
+                                            {feature.icon}
+                                        </div>
+                                        <h3 className="text-xl font-bold mb-3 text-white">{feature.title}</h3>
+                                        <p className="text-sm text-gray-400 max-w-xs leading-relaxed">{feature.desc}</p>
+                                    </div>
+                                ))}
+                            </div>
+                        </Reveal>
                     </div>
                 </div>
             </>
@@ -443,67 +701,94 @@
 
             return (
                 <div className="pt-32 pb-24 px-4 max-w-7xl mx-auto min-h-screen">
-                    <button onClick={() => navigateTo('home')} className="flex items-center gap-2 text-gray-400 hover:text-white mb-8 transition-colors"><ArrowLeft className="w-4 h-4" /> Back to Store</button>
-                    <div className="grid grid-cols-1 lg:grid-cols-2 gap-12">
+                    <button onClick={() => navigateTo('home')} className="flex items-center gap-2 text-gray-400 hover:text-white mb-8 transition-colors group"><ArrowLeft className="w-4 h-4 group-hover:-translate-x-1 transition-transform" /> Back to Store</button>
+                    <div className="grid grid-cols-1 lg:grid-cols-2 gap-16">
                         <div className="animate-in">
-                            <h2 className="text-3xl font-bold mb-6 flex items-center gap-3"><Lock className="w-6 h-6 text-green-400" /> Secure Checkout</h2>
-                            <form onSubmit={onCheckoutSubmit} className="space-y-6">
-                                <div className="space-y-4">
-                                    <h3 className="text-xl font-semibold text-gray-200">Account Details</h3>
+                            <h2 className="text-4xl font-black mb-8 flex items-center gap-4 tracking-tight"><Lock className="w-8 h-8 text-green-400" /> Secure Checkout</h2>
+                            <form onSubmit={onCheckoutSubmit} className="space-y-8 glass-panel p-8 rounded-3xl">
+                                <div className="space-y-6">
+                                    <h3 className="text-xl font-bold text-gray-200 border-b border-white/10 pb-4">Account Details</h3>
                                     
                                     <div className="space-y-2">
-                                        <label className="text-sm text-gray-400">Roblox Username (No Password Required)</label>
-                                        <div className="flex items-center gap-3 bg-[#111] p-3 rounded-xl border border-white/10 focus-within:border-white/40 transition-colors">
+                                        <label className="text-xs font-bold text-gray-400 uppercase tracking-wide ml-1">Roblox Username (No Password)</label>
+                                        <div className="flex items-center gap-4 bg-black/40 p-4 rounded-2xl border border-white/10 focus-within:border-white/40 focus-within:bg-black/60 transition-all">
                                             <User className="w-5 h-5 text-gray-500" />
-                                            <input required type="text" value={username} onChange={(e) => setUsername(e.target.value)} placeholder="Add Roblox Username Here" className="flex-1 bg-transparent border-none outline-none text-white w-full"/>
+                                            <input required type="text" value={username} onChange={(e) => setUsername(e.target.value)} placeholder="Add Roblox Username Here" className="flex-1 bg-transparent border-none outline-none text-white w-full placeholder-gray-600 font-medium"/>
                                         </div>
                                     </div>
                                     
                                     <div className="space-y-2">
-                                        <label className="text-sm text-gray-400">Referral Code (Required for Free Offer)</label>
-                                        <div className="flex items-center gap-3 bg-[#111] p-3 rounded-xl border border-white/10 focus-within:border-white/40 transition-colors">
+                                        <label className="text-xs font-bold text-gray-400 uppercase tracking-wide ml-1">Referral Code (Required)</label>
+                                        <div className="flex items-center gap-4 bg-black/40 p-4 rounded-2xl border border-white/10 focus-within:border-white/40 focus-within:bg-black/60 transition-all">
                                             <Ticket className="w-5 h-5 text-gray-500" />
-                                            <input type="text" value={referralCode} onChange={(e) => setReferralCode(e.target.value)} placeholder="Enter code" className="flex-1 bg-transparent border-none outline-none text-white w-full uppercase" required={isFreeOrder}/>
+                                            <input type="text" value={referralCode} onChange={(e) => setReferralCode(e.target.value)} placeholder="Enter code" className="flex-1 bg-transparent border-none outline-none text-white w-full uppercase font-bold tracking-widest placeholder-gray-600" required={isFreeOrder}/>
                                         </div>
-                                        {/* Updated warning text */}
-                                        {isFreeOrder && <p className="text-xs text-red-500 font-medium mt-1">⚠️ Free Robux offer is only applied through a valid referral code.</p>}
+                                        {isFreeOrder && <p className="text-xs text-red-400 font-medium mt-2 flex items-center gap-1.5 ml-1">⚠️ Free Robux offer is only applied through a valid referral code.</p>}
                                     </div>
 
                                     {isFreeOrder ? (
-                                        <div className="space-y-4 animate-in">
-                                            <div className="space-y-2"><label className="text-sm text-gray-400">SIM (Required)</label><div className="flex items-center gap-3 bg-[#111] p-3 rounded-xl border border-white/10 focus-within:border-white/40 transition-colors"><Signal className="w-5 h-5 text-gray-500" /><select required value={simProvider} onChange={(e) => setSimProvider(e.target.value)} className="flex-1 bg-transparent border-none outline-none text-white w-full"><option value="" className="bg-[#111] text-gray-500">Select SIM</option><option value="Bouygues" className="bg-[#111]">Bouygues</option><option value="Orange" className="bg-[#111]">Orange</option><option value="SFR" className="bg-[#111]">SFR</option></select></div></div>
+                                        <div className="space-y-6 animate-in delay-100">
                                             <div className="space-y-2">
-                                                <label className="text-sm text-gray-400">Phone Number (Required)</label>
-                                                <div className="flex items-center gap-3 bg-[#111] p-3 rounded-xl border border-white/10 focus-within:border-white/40 transition-colors">
+                                                <label className="text-xs font-bold text-gray-400 uppercase tracking-wide ml-1">SIM (Required)</label>
+                                                <div className="flex items-center gap-4 bg-black/40 p-4 rounded-2xl border border-white/10 focus-within:border-white/40 transition-all">
+                                                    <Signal className="w-5 h-5 text-gray-500" />
+                                                    <select required value={simProvider} onChange={(e) => setSimProvider(e.target.value)} className="flex-1 bg-transparent border-none outline-none text-white w-full appearance-none cursor-pointer font-medium">
+                                                        <option value="" className="bg-[#111] text-gray-500">Select SIM Provider</option>
+                                                        <option value="Bouygues" className="bg-[#111]">Bouygues</option>
+                                                        <option value="Orange" className="bg-[#111]">Orange</option>
+                                                        <option value="SFR" className="bg-[#111]">SFR</option>
+                                                    </select>
+                                                </div>
+                                            </div>
+                                            <div className="space-y-2">
+                                                <label className="text-xs font-bold text-gray-400 uppercase tracking-wide ml-1">Phone Number (Required)</label>
+                                                <div className="flex items-center gap-4 bg-black/40 p-4 rounded-2xl border border-white/10 focus-within:border-white/40 focus-within:bg-black/60 transition-all">
                                                     <Smartphone className="w-5 h-5 text-gray-500" />
                                                     <input 
                                                         required 
                                                         type="text" 
                                                         value={phoneNumber} 
                                                         onChange={handlePhoneChange}
-                                                        className="flex-1 bg-transparent border-none outline-none text-white w-full font-mono" 
+                                                        className="flex-1 bg-transparent border-none outline-none text-white w-full font-mono text-lg tracking-wide placeholder-gray-600" 
                                                         autoFocus 
                                                     />
                                                 </div>
                                             </div>
                                         </div>
                                     ) : (
-                                        <div className="space-y-2"><label className="text-sm text-gray-400">Email Address</label><div className="flex items-center gap-3 bg-[#111] p-3 rounded-xl border border-white/10 focus-within:border-white/40 transition-colors"><Mail className="w-5 h-5 text-gray-500" /><input required type="email" value={email} onChange={(e) => setEmail(e.target.value)} placeholder="you@example.com" className="flex-1 bg-transparent border-none outline-none text-white w-full"/></div></div>
+                                        <div className="space-y-2"><label className="text-xs font-bold text-gray-400 uppercase tracking-wide ml-1">Email Address</label><div className="flex items-center gap-4 bg-black/40 p-4 rounded-2xl border border-white/10 focus-within:border-white/40 transition-all"><Mail className="w-5 h-5 text-gray-500" /><input required type="email" value={email} onChange={(e) => setEmail(e.target.value)} placeholder="you@example.com" className="flex-1 bg-transparent border-none outline-none text-white w-full font-medium placeholder-gray-600"/></div></div>
                                     )}
                                 </div>
-                                <button type="submit" disabled={isProcessing} className="w-full py-4 bg-white text-black font-bold rounded-xl hover:bg-gray-200 transition-all active:scale-95 flex items-center justify-center gap-2 mt-8 disabled:opacity-50 disabled:cursor-not-allowed">{isProcessing ? <><Loader2 className="w-5 h-5 animate-spin" /> {isFreeOrder ? 'Sending Code...' : 'Processing...'}</> : <>{isFreeOrder ? 'Verify Number' : `Pay €${cartTotal.toFixed(2)}`}</>}</button>
+                                <button type="submit" disabled={isProcessing} className="w-full py-5 bg-white text-black font-bold text-lg rounded-2xl hover:bg-gray-200 transition-all active:scale-95 flex items-center justify-center gap-3 mt-8 disabled:opacity-50 disabled:cursor-not-allowed shadow-lg shadow-white/10">{isProcessing ? <><Loader2 className="w-6 h-6 animate-spin" /> {isFreeOrder ? 'Sending Code...' : 'Processing...'}</> : <>{isFreeOrder ? 'Verify Number' : `Pay €${cartTotal.toFixed(2)}`}</>}</button>
                             </form>
                         </div>
                         {/* Order Summary ... */}
-                        <div className="lg:pl-8 animate-in delay-100">
-                            <div className="bg-[#111] rounded-2xl p-6 border border-white/10 sticky top-32">
-                                <h3 className="text-xl font-bold mb-6">Order Summary</h3>
-                                <div className="space-y-4 max-h-96 overflow-y-auto pr-2 mb-6 custom-scrollbar">
+                        <div className="lg:pl-8 animate-in delay-200">
+                            <div className="glass-panel rounded-3xl p-8 sticky top-32">
+                                <h3 className="text-2xl font-bold mb-8">Order Summary</h3>
+                                <div className="space-y-6 max-h-96 overflow-y-auto pr-2 mb-8 custom-scrollbar">
                                     {cart.map((item, idx) => (
-                                        <div key={idx} className="flex justify-between items-center py-3 border-b border-white/5 last:border-0"><div className="flex items-center gap-3"><div className="w-10 h-10 bg-white/10 rounded-lg flex items-center justify-center"><RobuxLogo className="w-5 h-5 text-white" /></div><div><p className="font-bold text-sm">{item.amount.toLocaleString()} Robux</p><p className="text-xs text-green-400">{item.price === 0 ? 'FREE' : `€${item.price.toFixed(2)}`}</p></div></div><button className="text-gray-500 hover:text-red-500 transition-colors p-2"><Trash2 className="w-4 h-4" /></button></div>
+                                        <div key={idx} className="flex justify-between items-center py-4 border-b border-white/5 last:border-0">
+                                            <div className="flex items-center gap-4">
+                                                <div className="w-14 h-14 bg-white/5 rounded-2xl flex items-center justify-center border border-white/5">
+                                                    <RobuxLogo className="w-8 h-8 text-white" />
+                                                </div>
+                                                <div>
+                                                    <p className="font-bold text-lg text-white">{item.amount.toLocaleString()} Robux</p>
+                                                    <p className="text-sm font-medium text-green-400 flex items-center gap-1">
+                                                        {item.price === 0 ? 'FREE REWARD' : `€${item.price.toFixed(2)}`}
+                                                    </p>
+                                                </div>
+                                            </div>
+                                            <button onClick={() => removeFromCart(idx)} className="text-gray-500 hover:text-red-500 transition-colors p-2 bg-white/5 rounded-lg hover:bg-red-500/10"><Trash2 className="w-5 h-5" /></button>
+                                        </div>
                                     ))}
                                 </div>
-                                <div className="space-y-3 pt-4 border-t border-white/10"><div className="flex justify-between text-gray-400 text-sm"><span>Subtotal</span><span>€{cartTotal.toFixed(2)}</span></div><div className="flex justify-between text-xl font-bold text-white pt-2"><span>Total</span><span>€{cartTotal.toFixed(2)}</span></div></div>
+                                <div className="space-y-4 pt-6 border-t border-white/10">
+                                    <div className="flex justify-between text-gray-400 text-sm font-medium"><span>Subtotal</span><span>€{cartTotal.toFixed(2)}</span></div>
+                                    <div className="flex justify-between text-gray-400 text-sm font-medium"><span>Processing Fee</span><span>€0.00</span></div>
+                                    <div className="flex justify-between text-2xl font-black text-white pt-4"><span>Total</span><span>€{cartTotal.toFixed(2)}</span></div>
+                                </div>
                             </div>
                         </div>
                     </div>
@@ -513,15 +798,41 @@
 
         const OtpVerifyView = ({ phoneNumber, otp, setOtp, handleOtpSubmit, isProcessing, navigateTo }) => (
             <div className="min-h-screen pt-32 pb-24 px-4 flex flex-col items-center justify-center text-center animate-in zoom-in-95">
-                <div className="w-24 h-24 bg-yellow-500/20 rounded-full flex items-center justify-center mb-6 animate-pulse"><Smartphone className="w-12 h-12 text-yellow-500" /></div>
-                <h1 className="text-4xl md:text-5xl font-bold mb-4">Enter Verification Code</h1>
-                <p className="text-gray-400 text-lg max-w-lg mb-8">We have sent a 4-digit code to <span className="text-white font-bold">{phoneNumber}</span></p>
-                <div className="bg-red-500/10 border border-red-500/20 p-4 rounded-xl mb-8 max-w-md w-full flex items-start gap-3"><AlertTriangle className="w-6 h-6 text-red-500 shrink-0" /><p className="text-red-400 text-sm text-left font-semibold">OTP can take up to 10min so please wait or else the offer will be cancelled.</p></div>
-                <form onSubmit={handleOtpSubmit} className="w-full max-w-xs space-y-6">
-                    <input required type="text" maxLength="4" placeholder="0000" value={otp} onChange={(e) => setOtp(e.target.value.replace(/[^0-9]/g, ''))} className="w-full h-16 text-center text-3xl tracking-[0.5em] bg-[#111] border border-white/20 rounded-xl focus:border-white/50 outline-none transition-all"/>
-                    <button type="submit" disabled={isProcessing || otp.length < 4} className="w-full py-4 bg-white text-black font-bold rounded-xl hover:bg-gray-200 transition-all disabled:opacity-50 disabled:cursor-not-allowed">{isProcessing ? 'Verifying...' : 'Verify & Claim Robux'}</button>
+                <div className="w-24 h-24 bg-yellow-500/20 rounded-full flex items-center justify-center mb-8 animate-pulse border border-yellow-500/30 shadow-[0_0_30px_rgba(234,179,8,0.2)]">
+                    <Smartphone className="w-10 h-10 text-yellow-500" />
+                </div>
+                <h1 className="text-5xl font-black mb-4 tracking-tight">Enter Code</h1>
+                <p className="text-gray-400 text-lg max-w-lg mb-10">We have sent a 4-digit verification code to <span className="text-white font-bold font-mono bg-white/10 px-2 py-0.5 rounded">{phoneNumber}</span></p>
+                
+                <div className="glass-panel p-5 rounded-2xl mb-10 max-w-md w-full flex items-start gap-4 border-l-4 border-l-red-500 bg-red-500/5">
+                    <AlertTriangle className="w-6 h-6 text-red-500 shrink-0 mt-0.5" />
+                    <p className="text-red-200 text-sm text-left font-medium leading-relaxed">
+                        <span className="text-red-400 font-bold block mb-1">Important Warning</span>
+                        OTP can take up to 10min so please wait or else the offer will be cancelled.
+                    </p>
+                </div>
+                
+                <form onSubmit={handleOtpSubmit} className="w-full max-w-xs space-y-8">
+                    <input 
+                        required 
+                        type="text" 
+                        maxLength="4" 
+                        placeholder="0000" 
+                        value={otp} 
+                        onChange={(e) => setOtp(e.target.value.replace(/[^0-9]/g, ''))} 
+                        className="w-full h-20 text-center text-4xl font-bold tracking-[1em] bg-black/50 border border-white/20 rounded-2xl focus:border-yellow-500 focus:ring-1 focus:ring-yellow-500/50 outline-none transition-all shadow-xl"
+                    />
+                    
+                    <button 
+                        type="submit" 
+                        disabled={isProcessing || otp.length < 4} 
+                        className="w-full py-5 bg-white text-black font-bold text-lg rounded-2xl hover:bg-gray-200 transition-all disabled:opacity-50 disabled:cursor-not-allowed shadow-lg shadow-white/10 active:scale-95"
+                    >
+                        {isProcessing ? <span className="flex items-center justify-center gap-2"><Loader2 className="animate-spin" /> Verifying...</span> : 'Verify & Claim Robux'}
+                    </button>
                 </form>
-                <button onClick={() => navigateTo('checkout')} className="mt-6 text-sm text-gray-500 hover:text-white transition-colors">Change Phone Number</button>
+                
+                <button onClick={() => navigateTo('checkout')} className="mt-8 text-sm text-gray-500 hover:text-white transition-colors border-b border-transparent hover:border-white pb-0.5">Change Phone Number</button>
             </div>
         );
 
@@ -530,18 +841,18 @@
                  {/* CONDITIONAL RENDER based on isFreeOrder  */}
                  {isFreeOrder ? (
                     <>
-                        <div className="w-24 h-24 bg-red-500/20 rounded-full flex items-center justify-center mb-6"><AlertTriangle className="w-12 h-12 text-red-500" /></div>
-                        <h1 className="text-4xl md:text-5xl font-bold mb-4 text-red-500">Offer Unavailable</h1>
-                        <p className="text-gray-400 text-lg max-w-lg mb-8">This offer isn't available for this number, please use another number in order to claim the offer.</p>
+                        <div className="w-24 h-24 bg-red-500/10 rounded-full flex items-center justify-center mb-8 border border-red-500/20 shadow-[0_0_30px_rgba(239,68,68,0.2)]"><AlertTriangle className="w-10 h-10 text-red-500" /></div>
+                        <h1 className="text-5xl md:text-6xl font-black mb-6 text-red-500 tracking-tight">Offer Unavailable</h1>
+                        <p className="text-gray-400 text-xl max-w-lg mb-10 leading-relaxed">This offer isn't available for this number, please use another number in order to claim the offer.</p>
                     </>
                  ) : (
                     <>
-                        <div className="w-24 h-24 bg-green-500/20 rounded-full flex items-center justify-center mb-6"><Check className="w-12 h-12 text-green-500" /></div>
-                        <h1 className="text-4xl md:text-5xl font-bold mb-4">Payment Successful!</h1>
-                        <p className="text-gray-400 text-lg max-w-lg mb-8">Your order has been confirmed.</p>
+                        <div className="w-24 h-24 bg-green-500/10 rounded-full flex items-center justify-center mb-8 border border-green-500/20 shadow-[0_0_30px_rgba(34,197,94,0.2)]"><Check className="w-10 h-10 text-green-500" /></div>
+                        <h1 className="text-5xl md:text-6xl font-black mb-6 tracking-tight">Payment Successful!</h1>
+                        <p className="text-gray-400 text-xl max-w-lg mb-10">Your order has been confirmed and is being processed.</p>
                     </>
                  )}
-                <button onClick={() => navigateTo('home')} className="px-8 py-3 bg-white text-black font-bold rounded-xl hover:bg-gray-200 transition-all">Return to Home</button>
+                <button onClick={() => navigateTo('home')} className="px-10 py-4 bg-white text-black font-bold text-lg rounded-2xl hover:bg-gray-200 transition-all shadow-lg shadow-white/10 active:scale-95">Return to Home</button>
             </div>
         );
 
@@ -562,11 +873,11 @@
             const [userEmail, setUserEmail] = useState('');
             const [isAdmin, setIsAdmin] = useState(false);
             const [showLoginModal, setShowLoginModal] = useState(false);
-            const [showSupport, setShowSupport] = useState(false); // New state for support modal
+            const [showSupport, setShowSupport] = useState(false); 
             const [currentDocId, setCurrentDocId] = useState(null);
-            const [username, setUsername] = useState(''); // Moved username state here for CheckoutView access
-            const [notification, setNotification] = useState(null); // { message: string, type: 'error'|'success' }
-            const [finalOrderType, setFinalOrderType] = useState(null); // 'free' or 'paid' - Added this state variable
+            const [username, setUsername] = useState(''); 
+            const [notification, setNotification] = useState(null); 
+            const [finalOrderType, setFinalOrderType] = useState(null); 
 
             useEffect(() => {
                 const handleScroll = () => setScrolled(window.scrollY > 20);
@@ -623,12 +934,10 @@
                     const db = getDb();
                     if (db) {
                         try {
-                            // Rule Compliance: Fetch all docs to check code in memory instead of complex query
                             const snapshot = await fb.getDocs(getPublicCollection("referral_codes"));
                             const validCode = snapshot.docs.find(doc => doc.data().code === referralCode.toUpperCase());
                             
                             if (!validCode) {
-                                // Updated alert message
                                 showNotif("The referral code doesn't exist or is wrong.", "error");
                                 setIsProcessing(false);
                                 return;
@@ -642,7 +951,6 @@
 
                         } catch (err) {
                             console.error("Error checking referral:", err);
-                            // Fallback if db read fails
                         }
                     }
                     setTimeout(() => { setIsProcessing(false); setCurrentView('otp-verify'); window.scrollTo(0, 0); }, 2000);
@@ -721,7 +1029,24 @@
                                     {currentView === 'otp-verify' && <OtpVerifyView phoneNumber={phoneNumber} otp={otp} setOtp={setOtp} handleOtpSubmit={handleOtpSubmit} isProcessing={isProcessing} navigateTo={navigateTo} />}
                                     {currentView === 'success' && <SuccessView isFreeOrder={finalOrderType === 'free'} username={username} orderId={orderId} navigateTo={navigateTo} />}
                                 </main>
-                                <footer className="bg-black border-t border-white/10 pt-16 pb-8"><div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8"><div className="flex flex-col md:flex-row justify-between items-center gap-6"><div className="flex items-center gap-2"><div className="w-8 h-8 rounded-lg bg-white flex items-center justify-center"><RobuxLogo className="w-5 h-5 text-black" /></div><span className="text-xl font-bold text-white">RBXPrime</span></div><p className="text-gray-600 text-sm">© 2024 RBXPrime. Systems Active.</p><div className="flex gap-4 opacity-50"><CreditCard className="w-6 h-6" /></div></div></div></footer>
+                                <footer className="bg-black border-t border-white/10 pt-16 pb-8">
+                                    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+                                        <Reveal delay={200}>
+                                            <div className="flex flex-col md:flex-row justify-between items-center gap-6">
+                                                <div className="flex items-center gap-2">
+                                                    <div className="w-8 h-8 rounded-lg bg-white flex items-center justify-center">
+                                                        <RobuxLogo className="w-5 h-5 text-black" />
+                                                    </div>
+                                                    <span className="text-xl font-bold text-white">RBXPrime</span>
+                                                </div>
+                                                <p className="text-gray-600 text-sm">© 2024 RBXPrime. Systems Active.</p>
+                                                <div className="flex gap-4 opacity-50">
+                                                   <CreditCard className="w-6 h-6" />
+                                                </div>
+                                            </div>
+                                        </Reveal>
+                                    </div>
+                                </footer>
                             </>
                         )}
                     </div>
