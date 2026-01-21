@@ -32,7 +32,7 @@
           Leaf, Truck, ShieldCheck, Heart, Search, ShoppingCart, 
           User, ChevronRight, ArrowRight, Menu, X, MapPin, Star, 
           Facebook, Twitter, Instagram, Upload, FileText, CheckCircle, 
-          XCircle, AlertCircle, Package, DollarSign, Users, ClipboardList, Loader2, QrCode, Image as ImageIcon, LayoutDashboard, Info, Home, Mail, Trash2, Box
+          XCircle, AlertCircle, Package, DollarSign, Users, ClipboardList, Loader2, QrCode, Image as ImageIcon, LayoutDashboard, Info, Home, Mail, Trash2, Box, Edit2
         } from 'lucide-react';
 
         // --- FIREBASE IMPORTS ---
@@ -473,8 +473,7 @@
             const [prodFile, setProdFile] = useState(null);
             const [uploadingProd, setUploadingProd] = useState(false);
             const [myOrders, setMyOrders] = useState([]);
-            const [rejectReason, setRejectReason] = useState("");
-            const [selectedOrder, setSelectedOrder] = useState(null);
+            const [editingId, setEditingId] = useState(null); // Track which product is being edited
 
             useEffect(() => {
               if (tab === 'orders') {
@@ -488,20 +487,69 @@
               }
             }, [tab, currentUser.uid]);
 
-            const handleAddProduct = async (e) => {
+            const handleSaveProduct = async (e) => {
               e.preventDefault();
               setUploadingProd(true);
               try {
-                  let imageUrl = "";
+                  let imageUrl = newProd.imageUrl || ""; // Keep existing if editing
                   if (prodFile) imageUrl = await uploadToCloudinary(prodFile);
-                  await addProduct({ ...newProd, imageUrl });
+                  
+                  const productData = {
+                      ...newProd,
+                      imageUrl,
+                      farmerId: currentUser.uid,
+                      farmerName: currentUser.name,
+                      status: 'pending', // Re-verify on edit? Or keep current? Let's pending for safety or keep same. Let's set to pending for re-approval on edits for safety.
+                      updatedAt: serverTimestamp()
+                  };
+
+                  if (editingId) {
+                      // Update existing
+                      await updateDoc(doc(db, "products", editingId), productData);
+                      showNotification("Product updated successfully!", "success");
+                  } else {
+                      // Create new
+                      await addDoc(collection(db, "products"), {
+                          ...productData,
+                          createdAt: serverTimestamp()
+                      });
+                      showNotification("Product submitted for approval!", "success");
+                  }
+
+                  // Reset form
                   setNewProd({ name: '', price: '', stock: '', unit: 'kg', pesticides: false, description: '', farmAddress: '', state: '' });
                   setProdFile(null);
+                  setEditingId(null);
               } catch (error) {
-                  showNotification("Failed to add product", "error");
+                  console.error(error);
+                  showNotification("Failed to save product", "error");
               } finally {
                   setUploadingProd(false);
               }
+            };
+
+            const handleDeleteProduct = async (productId) => {
+                if(confirm("Are you sure you want to delete this product? This cannot be undone.")) {
+                    try {
+                        await deleteDoc(doc(db, "products", productId));
+                        showNotification("Product deleted.", "success");
+                    } catch (error) {
+                        showNotification("Error deleting product", "error");
+                    }
+                }
+            };
+
+            const handleEditClick = (product) => {
+                setNewProd(product);
+                setEditingId(product.id);
+                setProdFile(null); // Reset file input
+                window.scrollTo({ top: 0, behavior: 'smooth' }); // Scroll to form
+            };
+
+            const handleCancelEdit = () => {
+                setNewProd({ name: '', price: '', stock: '', unit: 'kg', pesticides: false, description: '', farmAddress: '', state: '' });
+                setEditingId(null);
+                setProdFile(null);
             };
 
             const StatusBanner = () => (
@@ -530,9 +578,15 @@
                   {tab === 'inventory' && (
                     <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
                       <div className="lg:col-span-1">
-                        <div className="bg-white p-6 rounded-3xl shadow-sm border border-gray-100">
-                          <h3 className="text-xl font-bold mb-4 flex items-center gap-2"><Upload className="w-5 h-5"/> Add Product</h3>
-                          <form className="space-y-4" onSubmit={handleAddProduct}>
+                        <div className={`bg-white p-6 rounded-3xl shadow-sm border ${editingId ? 'border-yellow-400 ring-2 ring-yellow-100' : 'border-gray-100'}`}>
+                          <div className="flex justify-between items-center mb-4">
+                              <h3 className="text-xl font-bold flex items-center gap-2">
+                                  {editingId ? <><Edit2 className="w-5 h-5 text-yellow-600"/> Edit Product</> : <><Upload className="w-5 h-5"/> Add Product</>}
+                              </h3>
+                              {editingId && <button onClick={handleCancelEdit} className="text-xs font-bold text-gray-400 hover:text-gray-600">Cancel</button>}
+                          </div>
+                          
+                          <form className="space-y-4" onSubmit={handleSaveProduct}>
                             <input required className="input-field w-full" value={newProd.name} onChange={e => setNewProd({...newProd, name: e.target.value})} placeholder="Product Name" />
                             <div className="grid grid-cols-2 gap-4">
                               <input required type="number" className="input-field w-full" value={newProd.price} onChange={e => setNewProd({...newProd, price: Number(e.target.value)})} placeholder="Price (₹)" />
@@ -549,15 +603,22 @@
                             <input required className="input-field w-full" value={newProd.state} onChange={e => setNewProd({...newProd, state: e.target.value})} placeholder="State" />
                             
                             <div><label className="text-xs font-bold text-gray-500 uppercase">Description</label><textarea className="input-field w-full h-20" value={newProd.description} onChange={e => setNewProd({...newProd, description: e.target.value})} placeholder="Freshness details..." /></div>
-                            <div className="border-2 border-dashed border-gray-200 rounded-xl p-4 text-center bg-gray-50 relative"><span className="text-sm font-bold text-gray-700">{prodFile ? prodFile.name : "Product Image"}</span><input type="file" className="absolute inset-0 opacity-0 cursor-pointer" onChange={(e) => setProdFile(e.target.files[0])} /></div>
+                            <div className="border-2 border-dashed border-gray-200 rounded-xl p-4 text-center bg-gray-50 relative">
+                                <span className="text-sm font-bold text-gray-700">{prodFile ? prodFile.name : (newProd.imageUrl ? "Change Image" : "Product Image")}</span>
+                                <input type="file" className="absolute inset-0 opacity-0 cursor-pointer" onChange={(e) => setProdFile(e.target.files[0])} />
+                            </div>
                             <div className="flex items-center gap-2 p-3 bg-gray-50 rounded-xl"><input type="checkbox" id="pest" checked={newProd.pesticides} onChange={e => setNewProd({...newProd, pesticides: e.target.checked})} className="w-5 h-5 text-green-600 rounded" /><label htmlFor="pest" className="text-sm font-medium text-gray-700">Pesticides Used?</label></div>
-                            <button disabled={uploadingProd} className="w-full py-3 bg-green-700 text-white font-bold rounded-xl hover:bg-green-800 disabled:opacity-50">{uploadingProd ? 'Uploading...' : 'Publish Product'}</button>
+                            
+                            <button disabled={uploadingProd} className={`w-full py-3 text-white font-bold rounded-xl disabled:opacity-50 ${editingId ? 'bg-yellow-600 hover:bg-yellow-700' : 'bg-green-700 hover:bg-green-800'}`}>
+                                {uploadingProd ? 'Processing...' : (editingId ? 'Update Product' : 'Publish Product')}
+                            </button>
                           </form>
                         </div>
                       </div>
                       <div className="lg:col-span-2 space-y-4">
+                        {myProducts.length === 0 && <div className="text-center py-20 text-gray-400">No inventory yet. Add your first product!</div>}
                         {myProducts.map(p => (
-                          <div key={p.id} className="bg-white p-5 rounded-2xl shadow-sm border border-gray-100 flex items-center gap-4">
+                          <div key={p.id} className="bg-white p-5 rounded-2xl shadow-sm border border-gray-100 flex items-center gap-4 group">
                             {p.imageUrl && <img src={p.imageUrl} className="w-20 h-20 object-cover rounded-xl bg-gray-100" />}
                             <div className="flex-1">
                                 <h4 className="text-lg font-bold text-gray-900">{p.name}</h4>
@@ -568,6 +629,10 @@
                                 </div>
                                 <p className="text-xs text-gray-500 line-clamp-1 mt-1">{p.description}</p>
                                 <div className="flex gap-4 text-sm text-gray-500 mt-1"><span>Stock: <strong>{p.stock} {p.unit}</strong></span><span>Price: <strong>₹{p.price}</strong></span></div>
+                            </div>
+                            <div className="flex flex-col gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                                <button onClick={() => handleEditClick(p)} className="p-2 bg-gray-100 hover:bg-yellow-100 text-gray-600 hover:text-yellow-700 rounded-lg"><Edit2 className="w-4 h-4"/></button>
+                                <button onClick={() => handleDeleteProduct(p.id)} className="p-2 bg-gray-100 hover:bg-red-100 text-gray-600 hover:text-red-700 rounded-lg"><Trash2 className="w-4 h-4"/></button>
                             </div>
                           </div>
                         ))}
@@ -702,7 +767,16 @@
              const [screenshots, setScreenshots] = useState({});
              const [uploading, setUploading] = useState(false);
              const [error, setError] = useState(""); 
-             const [delivery, setDelivery] = useState({ name: currentUser?.name || '', email: currentUser?.email || '', phone: currentUser?.phone || '', address: currentUser?.address || '', landmark: '', state: '', zip: '' });
+             const [delivery, setDelivery] = useState({ 
+                 name: currentUser?.name || '', 
+                 email: currentUser?.email || '', 
+                 phone: currentUser?.phone || '', 
+                 address: currentUser?.address || '', 
+                 landmark: '', 
+                 state: '', 
+                 zip: '',
+                 country: 'India' // Default locked
+             });
 
              useEffect(() => {
                  const groups = {};
@@ -725,7 +799,7 @@
              const handleConfirm = async () => {
                  setError(""); 
                  if (!delivery.name || !delivery.email || !delivery.phone || !delivery.address || !delivery.state || !delivery.zip) {
-                     setError("Please fill in all mandatory delivery details (Name, Email, Phone, Address, State, Zip).");
+                     setError("Please fill in all mandatory delivery details.");
                      return;
                  }
                  if (delivery.phone.length !== 10) {
@@ -735,7 +809,7 @@
                  const farmerIds = Object.keys(groupedItems);
                  for (const fid of farmerIds) {
                      if (!screenshots[fid]) {
-                         setError("Missing payment screenshot! Please upload proof of payment for all farmers.");
+                         setError("Missing payment screenshot! Please upload proof.");
                          return;
                      }
                  }
@@ -770,63 +844,125 @@
 
              return (
                  <div className="fixed inset-0 bg-black/50 z-[100] flex items-center justify-center p-4">
-                     <div className="bg-white rounded-3xl p-8 max-w-2xl w-full max-h-[90vh] overflow-y-auto">
-                         <h2 className="text-2xl font-bold mb-6">Checkout & Delivery Details</h2>
+                     <div className="bg-white rounded-3xl p-8 max-w-4xl w-full max-h-[90vh] overflow-y-auto">
+                         <div className="flex justify-between items-center mb-6 border-b pb-4">
+                            <h2 className="text-2xl font-black text-gray-900">Checkout</h2>
+                            <button onClick={onClose} className="p-2 hover:bg-gray-100 rounded-full"><X className="w-6 h-6 text-gray-500"/></button>
+                         </div>
+                         
+                         {/* Error Banner */}
                          {error && (
                              <div className="bg-red-50 border border-red-200 text-red-700 p-4 rounded-xl mb-6 flex items-start gap-3 animate-in slide-in-from-top-2">
                                  <AlertCircle className="w-5 h-5 mt-0.5 flex-shrink-0" />
                                  <p className="text-sm font-bold">{error}</p>
                              </div>
                          )}
-                         <div className="mb-8 bg-gray-50 p-6 rounded-2xl border border-gray-100 space-y-4">
-                             <h3 className="font-bold text-gray-700 flex items-center gap-2"><Home className="w-5 h-5"/> Home Delivery Address</h3>
-                             <div className="grid grid-cols-2 gap-4">
-                                 <input placeholder="Full Name *" className="w-full px-4 py-3 rounded-xl border" value={delivery.name} onChange={e => setDelivery({...delivery, name: e.target.value})} />
-                                 <div className="relative">
-                                     <div className="absolute left-4 top-1/2 -translate-y-1/2 font-bold text-gray-500 border-r border-gray-300 pr-2">+91</div>
-                                     <input required placeholder="Phone Number *" className="w-full pl-16 pr-4 py-3 rounded-xl border" value={delivery.phone} maxLength={10} onChange={e => setDelivery({...delivery, phone: e.target.value.replace(/\D/g, '')})} />
-                                 </div>
-                             </div>
-                             <div className="grid grid-cols-2 gap-4">
-                                 <input placeholder="Email *" className="w-full px-4 py-3 rounded-xl border" value={delivery.email} onChange={e => setDelivery({...delivery, email: e.target.value})} />
-                                 <input placeholder="Zip Code *" className="w-full px-4 py-3 rounded-xl border" value={delivery.zip} onChange={e => setDelivery({...delivery, zip: e.target.value})} />
-                             </div>
-                             <input placeholder="Street Address *" className="w-full px-4 py-3 rounded-xl border" value={delivery.address} onChange={e => setDelivery({...delivery, address: e.target.value})} />
-                             <div className="grid grid-cols-2 gap-4">
-                                <input placeholder="Landmark (Optional)" className="w-full px-4 py-3 rounded-xl border" value={delivery.landmark} onChange={e => setDelivery({...delivery, landmark: e.target.value})} />
-                                <input placeholder="State / Province *" className="w-full px-4 py-3 rounded-xl border" value={delivery.state} onChange={e => setDelivery({...delivery, state: e.target.value})} />
-                             </div>
-                         </div>
-                         <div className="space-y-8">
-                             {Object.keys(groupedItems).map(farmerId => {
-                                 const items = groupedItems[farmerId];
-                                 const subtotal = items.reduce((s, i) => s + (i.price * i.quantity), 0);
-                                 const deliveryFee = 60;
-                                 const total = subtotal + deliveryFee;
-                                 return (
-                                     <div key={farmerId} className="border border-gray-200 rounded-2xl p-6">
-                                         <h3 className="font-bold text-lg mb-2">Order for Farmer #{farmerId.slice(0,5)}</h3>
-                                         <div className="mb-4 bg-gray-50 p-4 rounded-xl text-sm">
-                                             {items.map(i => <div key={i.id} className="flex justify-between mb-1"><span>{i.name} x {i.quantity}</span><span>₹{i.price * i.quantity}</span></div>)}
-                                             <div className="border-t border-gray-200 my-2 pt-2">
-                                                 <div className="flex justify-between text-gray-500"><span>Subtotal</span><span>₹{subtotal}</span></div>
-                                                 <div className="flex justify-between text-gray-500"><span>Delivery Fee</span><span>₹{deliveryFee}</span></div>
-                                                 <div className="flex justify-between font-bold text-lg text-gray-900 mt-1"><span>Total to Pay</span><span>₹{total}</span></div>
-                                             </div>
+                         
+                         <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+                             {/* LEFT: Shipping Form */}
+                             <div>
+                                 <h3 className="font-bold text-gray-900 text-lg mb-4 flex items-center gap-2"><Home className="w-5 h-5"/> Shipping Address</h3>
+                                 <div className="space-y-4">
+                                     <div className="grid grid-cols-2 gap-4">
+                                         <div>
+                                            <label className="text-xs font-bold text-gray-500 uppercase ml-1">Full Name</label>
+                                            <input className="w-full px-4 py-3 rounded-xl bg-gray-50 border border-gray-200 focus:bg-white focus:border-green-500 outline-none transition-all" value={delivery.name} onChange={e => setDelivery({...delivery, name: e.target.value})} />
                                          </div>
-                                         <div className={`p-4 rounded-xl flex flex-col sm:flex-row items-center gap-6 ${!screenshots[farmerId] && error ? 'bg-red-50 border border-red-200' : 'bg-green-50'}`}>
-                                             {farmerQRs[farmerId] ? (<img src={farmerQRs[farmerId]} alt="QR" className="w-32 h-32 object-cover rounded-lg border-4 border-white shadow-sm" />) : (<div className="w-32 h-32 bg-gray-200 flex items-center justify-center text-xs text-center p-2 rounded-lg">No QR Available</div>)}
-                                             <div className="flex-1 w-full">
-                                                 <p className="text-sm font-bold mb-2 text-green-800">1. Scan QR to Pay ₹{total}</p>
-                                                 <p className={`text-sm font-bold mb-2 ${!screenshots[farmerId] && error ? 'text-red-600 animate-pulse' : 'text-green-800'}`}>2. Upload Payment Screenshot (Required)</p>
-                                                 <input type="file" className="text-sm w-full" onChange={(e) => setScreenshots({...screenshots, [farmerId]: e.target.files[0]})} />
-                                             </div>
+                                         <div>
+                                            <label className="text-xs font-bold text-gray-500 uppercase ml-1">Phone Number</label>
+                                            <div className="relative">
+                                                <div className="absolute left-4 top-1/2 -translate-y-1/2 font-bold text-gray-500 border-r border-gray-300 pr-2 text-sm">+91</div>
+                                                <input className="w-full pl-16 pr-4 py-3 rounded-xl bg-gray-50 border border-gray-200 focus:bg-white focus:border-green-500 outline-none transition-all" value={delivery.phone} maxLength={10} onChange={e => setDelivery({...delivery, phone: e.target.value.replace(/\D/g, '')})} />
+                                            </div>
                                          </div>
                                      </div>
-                                 );
-                             })}
+                                     
+                                     <div>
+                                        <label className="text-xs font-bold text-gray-500 uppercase ml-1">Address</label>
+                                        <input className="w-full px-4 py-3 rounded-xl bg-gray-50 border border-gray-200 focus:bg-white focus:border-green-500 outline-none transition-all" placeholder="Street address, P.O. box, etc." value={delivery.address} onChange={e => setDelivery({...delivery, address: e.target.value})} />
+                                     </div>
+                                     
+                                     <div className="grid grid-cols-2 gap-4">
+                                         <div>
+                                            <label className="text-xs font-bold text-gray-500 uppercase ml-1">Landmark (Optional)</label>
+                                            <input className="w-full px-4 py-3 rounded-xl bg-gray-50 border border-gray-200 focus:bg-white focus:border-green-500 outline-none transition-all" value={delivery.landmark} onChange={e => setDelivery({...delivery, landmark: e.target.value})} />
+                                         </div>
+                                         <div>
+                                            <label className="text-xs font-bold text-gray-500 uppercase ml-1">Email</label>
+                                            <input className="w-full px-4 py-3 rounded-xl bg-gray-50 border border-gray-200 focus:bg-white focus:border-green-500 outline-none transition-all" value={delivery.email} onChange={e => setDelivery({...delivery, email: e.target.value})} />
+                                         </div>
+                                     </div>
+
+                                     <div className="grid grid-cols-3 gap-4">
+                                         <div>
+                                            <label className="text-xs font-bold text-gray-500 uppercase ml-1">City/State</label>
+                                            <input className="w-full px-4 py-3 rounded-xl bg-gray-50 border border-gray-200 focus:bg-white focus:border-green-500 outline-none transition-all" value={delivery.state} onChange={e => setDelivery({...delivery, state: e.target.value})} />
+                                         </div>
+                                         <div>
+                                            <label className="text-xs font-bold text-gray-500 uppercase ml-1">ZIP Code</label>
+                                            <input className="w-full px-4 py-3 rounded-xl bg-gray-50 border border-gray-200 focus:bg-white focus:border-green-500 outline-none transition-all" value={delivery.zip} onChange={e => setDelivery({...delivery, zip: e.target.value})} />
+                                         </div>
+                                         <div>
+                                            <label className="text-xs font-bold text-gray-500 uppercase ml-1">Country</label>
+                                            <input className="w-full px-4 py-3 rounded-xl bg-gray-100 border border-gray-200 text-gray-500 cursor-not-allowed" value="India" disabled />
+                                         </div>
+                                     </div>
+                                 </div>
+                             </div>
+
+                             {/* RIGHT: Order Summary */}
+                             <div className="bg-gray-50 p-6 rounded-3xl h-fit border border-gray-200">
+                                 <h3 className="font-bold text-gray-900 text-lg mb-4 flex items-center gap-2"><Package className="w-5 h-5"/> Order Summary</h3>
+                                 <div className="space-y-6">
+                                     {Object.keys(groupedItems).map(farmerId => {
+                                         const items = groupedItems[farmerId];
+                                         const subtotal = items.reduce((s, i) => s + (i.price * i.quantity), 0);
+                                         const deliveryFee = 60;
+                                         const total = subtotal + deliveryFee;
+
+                                         return (
+                                             <div key={farmerId} className="bg-white border border-gray-200 rounded-xl p-4 shadow-sm">
+                                                 <h4 className="font-bold text-sm mb-3 text-gray-500 uppercase tracking-wide">Seller #{farmerId.slice(0,5)}</h4>
+                                                 <div className="space-y-2 mb-4">
+                                                     {items.map(i => (
+                                                         <div key={i.id} className="flex justify-between text-sm">
+                                                             <span className="text-gray-700">{i.name} <span className="text-gray-400">x{i.quantity}</span></span>
+                                                             <span className="font-medium">₹{i.price * i.quantity}</span>
+                                                         </div>
+                                                     ))}
+                                                 </div>
+                                                 
+                                                 <div className="border-t border-gray-100 pt-2 mb-4 space-y-1">
+                                                     <div className="flex justify-between text-sm text-gray-500"><span>Subtotal</span><span>₹{subtotal}</span></div>
+                                                     <div className="flex justify-between text-sm text-gray-500"><span>Delivery</span><span>₹{deliveryFee}</span></div>
+                                                     <div className="flex justify-between text-base font-black text-gray-900 pt-1"><span>Total</span><span>₹{total}</span></div>
+                                                 </div>
+
+                                                 <div className={`p-3 rounded-lg flex flex-col items-center gap-3 text-center ${!screenshots[farmerId] && error ? 'bg-red-50 border border-red-200' : 'bg-green-50 border border-green-100'}`}>
+                                                     {farmerQRs[farmerId] ? (
+                                                         <div className="flex items-center gap-4 text-left w-full">
+                                                            <img src={farmerQRs[farmerId]} alt="QR" className="w-16 h-16 object-cover rounded-lg border shadow-sm" />
+                                                            <div className="flex-1">
+                                                                <p className="text-xs font-bold text-green-800 mb-1">Scan to Pay ₹{total}</p>
+                                                                <label className="text-xs bg-white border border-green-200 px-2 py-1 rounded cursor-pointer hover:bg-green-50 transition-colors block text-center">
+                                                                    {screenshots[farmerId] ? "Screenshot Added" : "Upload Proof"}
+                                                                    <input type="file" className="hidden" onChange={(e) => setScreenshots({...screenshots, [farmerId]: e.target.files[0]})} />
+                                                                </label>
+                                                            </div>
+                                                         </div>
+                                                     ) : (
+                                                         <div className="text-xs text-gray-500 w-full py-2 bg-gray-100 rounded">No QR Code available for this seller.</div>
+                                                     )}
+                                                 </div>
+                                             </div>
+                                         );
+                                     })}
+                                 </div>
+                                 <button onClick={handleConfirm} disabled={uploading} className="w-full mt-6 py-4 bg-gray-900 text-white font-bold rounded-xl hover:bg-black disabled:opacity-50 transition-all shadow-lg">
+                                     {uploading ? <span className="flex items-center justify-center gap-2"><Loader2 className="animate-spin w-5 h-5"/> Processing...</span> : 'Confirm & Place Order'}
+                                 </button>
+                             </div>
                          </div>
-                         <div className="mt-8 flex gap-4"><button onClick={onClose} className="flex-1 py-3 rounded-xl font-bold text-gray-500 hover:bg-gray-100">Cancel</button><button onClick={handleConfirm} disabled={uploading} className="flex-1 py-3 bg-green-700 text-white rounded-xl font-bold hover:bg-green-800 disabled:opacity-50">{uploading ? 'Processing Order...' : 'Confirm Payment'}</button></div>
                      </div>
                  </div>
              );
